@@ -253,8 +253,8 @@ export default function NicheHunterPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr key={product.asin} className="border-b border-zinc-800 hover:bg-zinc-800/20 transition-colors">
+                    {filteredProducts.map((product, index) => (
+                      <tr key={`${product.asin}-${index}`} className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <img src={product.image} alt={product.title} className="w-12 h-12 rounded object-cover shrink-0" />
