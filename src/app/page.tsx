@@ -1,65 +1,246 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart } from "lucide-react";
+
+interface Product {
+  asin: string;
+  title: string;
+  price: number;
+  image: string;
+  reviews: number;
+  rating: number;
+  is_prime: boolean;
+  bestseller_rank: string | number;
+}
+
+interface Analysis {
+  winner_subnicho: { name: string; reason: string };
+  emerging_opportunity: { name: string; reason: string };
+  red_alert: { name: string; reason: string };
+  pivot_idea: { name: string; reason: string };
+}
+
+// Función heurística rápida para calificar la competencia
+const getViabilityBadge = (reviews: number, rating: number) => {
+  if (reviews > 1000) return <span className="bg-red-900/40 text-red-400 border border-red-800 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Saturado (Difícil)</span>;
+  if (rating < 4.0 && reviews > 10) return <span className="bg-[#FF9900]/20 text-[#FF9900] border border-[#FF9900]/50 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Oportunidad de Mejora</span>;
+  if (reviews < 150) return <span className="bg-green-900/40 text-green-400 border border-green-800 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Excelente (Baja Competencia)</span>;
+  return <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Regular (Competencia Media)</span>;
+};
+
+const getViabilityStatus = (reviews: number, rating: number) => {
+  if (reviews > 1000) return "Saturado";
+  if (rating < 4.0 && reviews > 10) return "Mejora";
+  if (reviews < 150) return "Excelente";
+  return "Regular";
+};
+
+export default function NicheHunterPage() {
+  const [keyword, setKeyword] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("Todos");
+
+  const filteredProducts = products.filter(p => {
+    if (filter === "Todos") return true;
+    return getViabilityStatus(p.reviews, p.rating) === filter;
+  });
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyword) return;
+    
+    setIsSearching(true);
+    setError("");
+    setProducts([]);
+    setAnalysis(null);
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Error al buscar");
+      }
+
+      setProducts(data.products || []);
+      setAnalysis(data.analysis || null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="flex flex-col h-full bg-[#0B0E14] overflow-y-auto">
+      {/* Header */}
+      <div className="bg-[#0F1111] px-8 py-6 border-b border-zinc-800">
+        <h1 className="text-2xl font-bold text-white flex items-center mb-2">
+          <Search className="w-6 h-6 mr-3 text-[#FF9900]" />
+          Niche Hunter
+        </h1>
+        <p className="text-zinc-400 text-sm">
+          Descubre productos rentables y subnichos de baja competencia en Amazon MX usando IA.
+        </p>
+      </div>
+
+      <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
+        {/* Barra de búsqueda */}
+        <form onSubmit={handleSearch} className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Ingresa una palabra clave (ej: Peluches, Mochila táctica)..."
+              className="w-full bg-[#1A1D24] border border-zinc-700 rounded-lg py-3 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition-colors"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <button
+            type="submit"
+            disabled={isSearching}
+            className="bg-[#FF9900] hover:bg-[#E88B00] text-black font-semibold px-8 py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {isSearching ? "Buscando en Amazon MX..." : "Analizar Nicho"}
+          </button>
+        </form>
+
+        {error && (
+          <div className="p-4 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            {error}
+          </div>
+        )}
+
+        {/* Dashboard de Resultados */}
+        {!isSearching && products.length > 0 && (
+          <div className="space-y-6 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Análisis IA */}
+            {analysis && (
+              <div className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/30 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-indigo-300 flex items-center mb-4">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Análisis DeepSeek: Nichos Encontrados
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
+                    <div className="text-sm text-zinc-400 mb-1">Subnicho Ganador</div>
+                    <div className="text-white font-medium flex items-center mb-2">
+                      <TrendingUp className="w-4 h-4 mr-2 text-green-500" />
+                      {analysis.winner_subnicho.name}
+                    </div>
+                    <div className="text-xs text-zinc-500">{analysis.winner_subnicho.reason}</div>
+                  </div>
+                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
+                    <div className="text-sm text-zinc-400 mb-1">Oportunidad Emergente</div>
+                    <div className="text-white font-medium flex items-center mb-2">
+                      <TrendingUp className="w-4 h-4 mr-2 text-[#FF9900]" />
+                      {analysis.emerging_opportunity.name}
+                    </div>
+                    <div className="text-xs text-zinc-500">{analysis.emerging_opportunity.reason}</div>
+                  </div>
+                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
+                    <div className="text-sm text-zinc-400 mb-1">Alerta Roja</div>
+                    <div className="text-white font-medium flex items-center mb-2">
+                      <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                      {analysis.red_alert.name}
+                    </div>
+                    <div className="text-xs text-zinc-500">{analysis.red_alert.reason}</div>
+                  </div>
+                  <div className="bg-[#0F1111] p-4 rounded-lg border border-indigo-500/30">
+                    <div className="text-sm text-indigo-400 mb-1">Sugerencia (Pivot)</div>
+                    <div className="text-white font-medium flex items-center mb-2">
+                      <Sparkles className="w-4 h-4 mr-2 text-indigo-400" />
+                      {analysis.pivot_idea?.name || "Buscando alternativas..."}
+                    </div>
+                    <div className="text-xs text-zinc-500">{analysis.pivot_idea?.reason}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tabla de Resultados (Estilo Helium 10) */}
+            <div className="bg-[#0F1111] rounded-xl border border-zinc-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-zinc-800 flex flex-col md:flex-row justify-between items-center bg-[#1A1D24] gap-4">
+                <div>
+                  <h3 className="font-semibold text-white">Top Productos Orgánicos de Amazon MX</h3>
+                  <span className="text-sm text-zinc-400">{filteredProducts.length} resultados filtrados</span>
+                </div>
+                <div>
+                  <select 
+                    value={filter} 
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="bg-[#0B0E14] border border-zinc-700 text-white text-sm rounded-md py-1.5 px-3 focus:outline-none focus:border-[#FF9900]"
+                  >
+                    <option value="Todos">Todos los niveles</option>
+                    <option value="Excelente">Excelente (Baja Competencia)</option>
+                    <option value="Regular">Regular (Competencia Media)</option>
+                    <option value="Mejora">Oportunidad de Mejora</option>
+                    <option value="Saturado">Saturado (Difícil)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-zinc-400">
+                  <thead className="text-xs uppercase bg-[#0B0E14] text-zinc-500">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Producto</th>
+                      <th className="px-6 py-4 font-medium">Precio (MXN)</th>
+                      <th className="px-6 py-4 font-medium">Ingresos Est. (30 días)</th>
+                      <th className="px-6 py-4 font-medium">Reseñas / Rating</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((product) => (
+                      <tr key={product.asin} className="border-b border-zinc-800 hover:bg-zinc-800/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img src={product.image} alt={product.title} className="w-12 h-12 rounded object-cover shrink-0" />
+                            <div>
+                              <div className="text-white font-medium line-clamp-2 max-w-md" title={product.title}>
+                                {product.title}
+                              </div>
+                              <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
+                                <span>ASIN: {product.asin}</span>
+                                {product.is_prime && <span className="text-blue-400 font-bold tracking-widest text-[10px]">PRIME</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-white">
+                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(product.price)}
+                        </td>
+                        <td className="px-6 py-4 text-green-400 font-medium">
+                          {/* Fórmula básica ilustrativa de ingresos si vendiera 100 uds al mes */}
+                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(product.price * 100)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-white font-medium">{product.rating} ★ <span className="text-zinc-500 font-normal text-xs">({product.reviews} res.)</span></span>
+                            {getViabilityBadge(product.reviews, product.rating)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+      </div>
     </div>
   );
 }
