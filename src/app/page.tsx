@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart } from "lucide-react";
 
 interface Product {
@@ -49,10 +49,18 @@ export default function NicheHunterPage() {
     return getViabilityStatus(p.reviews, p.rating) === filter;
   });
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!keyword) return;
-    
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        setKeyword(q);
+        executeSearch(q);
+      }
+    }
+  }, []);
+
+  const executeSearch = async (queryToSearch: string) => {
     setIsSearching(true);
     setError("");
     setProducts([]);
@@ -62,7 +70,7 @@ export default function NicheHunterPage() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword })
+        body: JSON.stringify({ keyword: queryToSearch })
       });
 
       const data = await res.json();
@@ -78,6 +86,12 @@ export default function NicheHunterPage() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyword) return;
+    executeSearch(keyword);
   };
 
   return (
