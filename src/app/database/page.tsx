@@ -26,12 +26,15 @@ interface SavedProduct {
   origin_country: string;
   shipping_time: string;
   moq: number;
+  project_name: string;
 }
 
 export default function DatabasePage() {
   const [products, setProducts] = useState<SavedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [activeProject, setActiveProject] = useState<string>("General");
+  const [availableProjects, setAvailableProjects] = useState<string[]>(["General"]);
 
   useEffect(() => {
     fetchProducts();
@@ -46,6 +49,15 @@ export default function DatabasePage() {
 
     if (!error && data) {
       setProducts(data);
+      
+      const uniqueProjects = Array.from(new Set(data.map(p => p.project_name).filter(Boolean)));
+      if (!uniqueProjects.includes("General")) uniqueProjects.unshift("General");
+      setAvailableProjects(uniqueProjects as string[]);
+      
+      // Si el proyecto activo no existe en los datos (ej. se borró), selecciona el primero
+      if (uniqueProjects.length > 0 && !uniqueProjects.includes(activeProject)) {
+        setActiveProject(uniqueProjects[0] as string);
+      }
     }
     setIsLoading(false);
   };
@@ -68,7 +80,8 @@ export default function DatabasePage() {
   };
 
   const exportToCSV = () => {
-    if (products.length === 0) return;
+    const filteredExportProducts = products.filter(p => (p.project_name || "General") === activeProject);
+    if (filteredExportProducts.length === 0) return;
     
     const headers = [
       "NOMBRE DEL PRODUCTO", "ASIN", "CATEGORÍA", "TÉRMINOS DE BÚSQUEDA", "LINK EJEMPLO",
@@ -142,22 +155,38 @@ export default function DatabasePage() {
             {savingId && <span className="ml-4 text-xs text-[#FF9900] flex items-center"><Loader2 className="w-3 h-3 animate-spin mr-1"/> Guardando en la nube...</span>}
           </p>
         </div>
-        <button 
-          onClick={exportToCSV}
-          disabled={products.length === 0}
-          className="bg-green-700 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md transition-colors flex items-center disabled:opacity-50"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar a Excel (CSV)
-        </button>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-[#1A1D24] border border-zinc-800 rounded-md px-3 py-1.5">
+            <span className="text-xs text-zinc-500 uppercase font-bold mr-2">Carpeta:</span>
+            <select 
+              value={activeProject}
+              onChange={(e) => setActiveProject(e.target.value)}
+              className="bg-transparent text-[#FF9900] font-semibold text-sm focus:outline-none cursor-pointer"
+            >
+              {availableProjects.map(p => (
+                <option key={p} value={p} className="bg-[#1A1D24] text-white">{p}</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            onClick={exportToCSV}
+            disabled={products.filter(p => (p.project_name || "General") === activeProject).length === 0}
+            className="bg-green-700 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md transition-colors flex items-center disabled:opacity-50"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar a Excel (CSV)
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto bg-[#0B0E14] p-4">
         {isLoading ? (
           <div className="flex justify-center py-20 text-zinc-500 animate-pulse">Cargando tu base de datos en la nube...</div>
-        ) : products.length === 0 ? (
+        ) : products.filter(p => (p.project_name || "General") === activeProject).length === 0 ? (
           <div className="text-center py-20">
-            <h2 className="text-xl text-zinc-400 mb-4">No tienes productos guardados.</h2>
+            <h2 className="text-xl text-zinc-400 mb-4">No tienes productos en la carpeta "{activeProject}".</h2>
             <Link href="/" className="text-[#FF9900] hover:underline">Ir a Niche Hunter para guardar productos</Link>
           </div>
         ) : (
@@ -204,7 +233,7 @@ export default function DatabasePage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map(p => {
+                {products.filter(p => (p.project_name || "General") === activeProject).map(p => {
                   const utilidad = (p.price || 0) - (p.amazon_fees || 0) - (p.cost || 0);
                   const margen = p.price > 0 ? (utilidad / p.price) * 100 : 0;
                   const roi = p.cost > 0 ? (utilidad / p.cost) * 100 : 0;

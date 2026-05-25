@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart, Save, CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart, Save, CheckCircle2, Loader2, X, FolderPlus } from "lucide-react";
 
 interface Product {
   asin: string;
@@ -45,6 +46,30 @@ export default function NicheHunterPage() {
   const [filter, setFilter] = useState("Todos");
   const [savingAsin, setSavingAsin] = useState<string | null>(null);
   const [savedAsins, setSavedAsins] = useState<Set<string>>(new Set());
+
+  // Modal de Proyectos
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [productToSave, setProductToSave] = useState<Product | null>(null);
+  const [existingProjects, setExistingProjects] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState("General");
+  const [newProjectName, setNewProjectName] = useState("");
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    const { data, error } = await supabase
+      .from("saved_products")
+      .select("project_name");
+      
+    if (!error && data) {
+      const uniqueProjects = Array.from(new Set(data.map(d => d.project_name).filter(Boolean)));
+      if (!uniqueProjects.includes("General")) uniqueProjects.unshift("General");
+      setExistingProjects(uniqueProjects as string[]);
+    }
+  };
 
   const filteredProducts = products.filter(p => {
     if (filter === "Todos") return true;
@@ -98,22 +123,33 @@ export default function NicheHunterPage() {
 
   const handleSaveProduct = async (product: Product) => {
     if (savingAsin || savedAsins.has(product.asin)) return;
+    setProductToSave(product);
+    setIsModalOpen(true);
+  };
+
+  const confirmSaveProduct = async () => {
+    if (!productToSave) return;
     
-    setSavingAsin(product.asin);
+    const finalProject = isCreatingNew ? (newProjectName.trim() || "General") : selectedProject;
+    
+    setIsModalOpen(false);
+    setSavingAsin(productToSave.asin);
+    
     try {
       const res = await fetch("/api/products/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          asin: product.asin,
-          title: product.title,
-          price: product.price,
-          reviews: product.reviews,
-          rating: product.rating,
-          rank_24h: product.bestseller_rank,
+          asin: productToSave.asin,
+          title: productToSave.title,
+          price: productToSave.price,
+          reviews: productToSave.reviews,
+          rating: productToSave.rating,
+          rank_24h: productToSave.bestseller_rank,
           category: "General", 
           search_term: keyword,
-          link: `https://www.amazon.com.mx/dp/${product.asin}`
+          link: `https://www.amazon.com.mx/dp/${productToSave.asin}`,
+          project_name: finalProject
         })
       });
 
@@ -122,11 +158,21 @@ export default function NicheHunterPage() {
         throw new Error(errorData.error || "Error al guardar");
       }
 
-      setSavedAsins(prev => new Set(prev).add(product.asin));
+      setSavedAsins(prev => new Set(prev).add(productToSave.asin));
+      
+      // Actualizar lista de proyectos si es uno nuevo
+      if (isCreatingNew && newProjectName.trim()) {
+        if (!existingProjects.includes(newProjectName.trim())) {
+          setExistingProjects(prev => [...prev, newProjectName.trim()]);
+        }
+      }
     } catch (err: any) {
       alert("Error al guardar: " + err.message);
     } finally {
       setSavingAsin(null);
+      setProductToSave(null);
+      setNewProjectName("");
+      setIsCreatingNew(false);
     }
   };
 
@@ -312,6 +358,84 @@ export default function NicheHunterPage() {
           </div>
         )}
       </div>
+      {/* Modal de Selección de Proyecto */}
+      {isModalOpen && productToSave && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#1A1D24] border border-zinc-800 rounded-xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center">
+                <FolderPlus className="w-5 h-5 mr-2 text-[#FF9900]" />
+                Guardar en Proyecto
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-zinc-400 mb-6">
+              Estás a punto de guardar <strong className="text-white">"{productToSave.title.substring(0, 40)}..."</strong> y generar su FODA con IA. ¿En qué carpeta deseas organizarlo?
+            </p>
+
+            <div className="space-y-4 mb-8">
+              {!isCreatingNew ? (
+                <div>
+                  <label className="block text-xs text-zinc-500 uppercase font-bold mb-2">Seleccionar Carpeta Existente</label>
+                  <select 
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="w-full bg-[#0B0E14] border border-zinc-700 text-white rounded-md px-3 py-2 focus:outline-none focus:border-[#FF9900]"
+                  >
+                    {existingProjects.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <button 
+                    onClick={() => setIsCreatingNew(true)}
+                    className="mt-3 text-sm text-[#FF9900] hover:underline"
+                  >
+                    + Crear nueva carpeta
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs text-zinc-500 uppercase font-bold mb-2">Nombre de la Nueva Carpeta</label>
+                  <input 
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="Ej. Análisis Diciembre, Utensilios..."
+                    autoFocus
+                    className="w-full bg-[#0B0E14] border border-zinc-700 text-white rounded-md px-3 py-2 focus:outline-none focus:border-[#FF9900]"
+                  />
+                  <button 
+                    onClick={() => setIsCreatingNew(false)}
+                    className="mt-3 text-sm text-zinc-400 hover:text-white"
+                  >
+                    Cancelar y elegir existente
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmSaveProduct}
+                disabled={isCreatingNew && !newProjectName.trim()}
+                className="px-4 py-2 rounded-md bg-[#FF9900] hover:bg-[#E88C00] text-black font-semibold transition-colors disabled:opacity-50 flex items-center"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Confirmar y Generar FODA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       category,
       search_term,
       link,
+      project_name,
     } = body;
 
     if (!asin || !title) {
@@ -132,6 +133,7 @@ export async function POST(req: Request) {
           foda_weakness: foda.weakness,
           foda_opportunity: foda.opportunity,
           foda_threat: foda.threat,
+          project_name: project_name || "General",
         }
       ])
       .select();
