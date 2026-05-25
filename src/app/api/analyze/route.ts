@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       Analiza esta lista de los 25 productos más vendidos para la palabra clave "${keyword}" en Amazon México.
       
       Lista de productos:
-      ${JSON.stringify(topProducts.map(p => ({ title: p.title, price: p.price, reviews: p.reviews, rating: p.rating })), null, 2)}
+      ${JSON.stringify(topProducts.map((p: any) => ({ title: p.title, price: p.price, reviews: p.reviews, rating: p.rating })), null, 2)}
       
       Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
       {
