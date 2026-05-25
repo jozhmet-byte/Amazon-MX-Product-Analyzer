@@ -6,6 +6,7 @@ import {
   Package,
   History,
   LineChart,
+  Database,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -34,7 +35,15 @@ export function Sidebar() {
           className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-zinc-800/30 hover:text-white transition-colors group"
         >
           <History className="w-5 h-5 mr-3 text-zinc-400 group-hover:text-white" />
-          Historial Guardado
+          Historial Búsquedas
+        </Link>
+
+        <Link 
+          href="/database" 
+          className="flex items-center px-3 py-2 text-sm font-medium bg-emerald-900/20 text-emerald-400 rounded-md border border-emerald-900/50 hover:bg-emerald-900/40 transition-colors group mt-2"
+        >
+          <Database className="w-5 h-5 mr-3 text-emerald-400" />
+          Base de Datos FBA
         </Link>
         
         <Link 

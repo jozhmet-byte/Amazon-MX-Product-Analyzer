@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart } from "lucide-react";
+import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart, Save, CheckCircle2, Loader2 } from "lucide-react";
 
 interface Product {
   asin: string;
@@ -43,6 +43,8 @@ export default function NicheHunterPage() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("Todos");
+  const [savingAsin, setSavingAsin] = useState<string | null>(null);
+  const [savedAsins, setSavedAsins] = useState<Set<string>>(new Set());
 
   const filteredProducts = products.filter(p => {
     if (filter === "Todos") return true;
@@ -92,6 +94,40 @@ export default function NicheHunterPage() {
     e.preventDefault();
     if (!keyword) return;
     executeSearch(keyword);
+  };
+
+  const handleSaveProduct = async (product: Product) => {
+    if (savingAsin || savedAsins.has(product.asin)) return;
+    
+    setSavingAsin(product.asin);
+    try {
+      const res = await fetch("/api/products/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          asin: product.asin,
+          title: product.title,
+          price: product.price,
+          reviews: product.reviews,
+          rating: product.rating,
+          rank_24h: product.bestseller_rank,
+          category: "General", 
+          search_term: keyword,
+          link: `https://www.amazon.com.mx/dp/${product.asin}`
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al guardar");
+      }
+
+      setSavedAsins(prev => new Set(prev).add(product.asin));
+    } catch (err: any) {
+      alert("Error al guardar: " + err.message);
+    } finally {
+      setSavingAsin(null);
+    }
   };
 
   return (
@@ -213,6 +249,7 @@ export default function NicheHunterPage() {
                       <th className="px-6 py-4 font-medium">Precio (MXN)</th>
                       <th className="px-6 py-4 font-medium">Ingresos Est. (30 días)</th>
                       <th className="px-6 py-4 font-medium">Reseñas / Rating</th>
+                      <th className="px-6 py-4 font-medium text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -244,6 +281,26 @@ export default function NicheHunterPage() {
                             <span className="text-white font-medium">{product.rating} ★ <span className="text-zinc-500 font-normal text-xs">({product.reviews} res.)</span></span>
                             {getViabilityBadge(product.reviews, product.rating)}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleSaveProduct(product)}
+                            disabled={savingAsin === product.asin || savedAsins.has(product.asin)}
+                            className={`p-2 rounded-md border transition-colors ${
+                              savedAsins.has(product.asin)
+                                ? "bg-green-900/20 border-green-500/30 text-green-400"
+                                : "bg-indigo-900/20 border-indigo-500/30 text-indigo-400 hover:bg-indigo-900/40"
+                            }`}
+                            title={savedAsins.has(product.asin) ? "Guardado en Base de Datos" : "Guardar en Base de Datos y Generar FODA"}
+                          >
+                            {savingAsin === product.asin ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : savedAsins.has(product.asin) ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : (
+                              <Save className="w-5 h-5" />
+                            )}
+                          </button>
                         </td>
                       </tr>
                     ))}
