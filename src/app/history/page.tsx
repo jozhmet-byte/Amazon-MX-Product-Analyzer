@@ -9,8 +9,8 @@ interface SearchHistory {
   id: string;
   keyword: string;
   created_at: string;
-  products: any[];
-  analysis: any;
+  products?: any[];
+  analysis?: any;
 }
 
 export default function HistoryPage() {
