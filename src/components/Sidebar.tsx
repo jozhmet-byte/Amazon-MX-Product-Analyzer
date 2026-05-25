@@ -5,6 +5,7 @@ import {
   Settings,
   Package,
   History,
+  LineChart,
 } from "lucide-react";
 
 export function Sidebar() {
