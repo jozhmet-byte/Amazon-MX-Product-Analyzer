@@ -34,46 +34,104 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Obtener reseñas del producto usando Rainforest API (1 crédito extra)
-    const rainforestUrl = `https://api.rainforestapi.com/request?api_key=${RAINFOREST_API_KEY}&type=reviews&amazon_domain=amazon.com.mx&asin=${asin}&max_page=1`;
+    // 1. Obtener producto y reseñas usando Rainforest API (1 solo crédito, type=product)
+    const rainforestUrl = `https://api.rainforestapi.com/request?api_key=${RAINFOREST_API_KEY}&type=product&amazon_domain=amazon.com.mx&asin=${asin}`;
     
     let rawReviews = [];
+    let sellers_count = 1;
+    let monthly_units = 0;
+    let selling_time = "";
+
     try {
       const rfRes = await fetch(rainforestUrl);
       const rfData = await rfRes.json();
-      if (rfData.reviews && Array.isArray(rfData.reviews)) {
-        rawReviews = rfData.reviews.map((r: any) => ({
-          title: r.title,
-          body: r.body,
-          rating: r.rating
-        }));
+      
+      if (rfData.product) {
+        // Reviews (top_reviews viene incluido en type=product)
+        if (rfData.product.top_reviews && Array.isArray(rfData.product.top_reviews)) {
+          rawReviews = rfData.product.top_reviews.map((r: any) => ({
+            title: r.title,
+            body: r.body,
+            rating: r.rating
+          }));
+        }
+
+        // Vendedores
+        if (rfData.product.buybox_winner?.new_offers_count) {
+          sellers_count = rfData.product.buybox_winner.new_offers_count;
+        } else if (rfData.product.more_buying_choices && Array.isArray(rfData.product.more_buying_choices)) {
+          sellers_count = rfData.product.more_buying_choices.length + 1;
+        }
+
+        // Unidades Mes (recent_sales)
+        if (rfData.product.recent_sales?.string) {
+          // Ej: "500+ comprados el mes pasado" o "1K+ bought in past month"
+          const match = rfData.product.recent_sales.string.match(/([\d,\.]+)[Kk]?\+?/);
+          if (match) {
+            let numStr = match[1].replace(/,/g, '');
+            let multiplier = rfData.product.recent_sales.string.toLowerCase().includes('k') ? 1000 : 1;
+            monthly_units = parseInt(numStr) * multiplier;
+            if (isNaN(monthly_units)) monthly_units = 0;
+          }
+        }
+
+        // Tiempo de venta (Date First Available)
+        let dateAvailableStr = null;
+        if (rfData.product.specifications && Array.isArray(rfData.product.specifications)) {
+          const spec = rfData.product.specifications.find((s: any) => 
+            s.name?.toLowerCase().includes("date first available") || 
+            s.name?.toLowerCase().includes("producto en amazon.com.mx desde") || 
+            s.name?.toLowerCase().includes("fecha de primera disponibilidad")
+          );
+          if (spec) dateAvailableStr = spec.value;
+        }
+        
+        if (!dateAvailableStr && rfData.product.product_information) {
+          for (const key of Object.keys(rfData.product.product_information)) {
+            if (key.toLowerCase().includes("date first available") || key.toLowerCase().includes("producto en amazon.com.mx desde")) {
+              dateAvailableStr = rfData.product.product_information[key];
+              break;
+            }
+          }
+        }
+        
+        if (dateAvailableStr) {
+          selling_time = dateAvailableStr;
+        }
       }
     } catch (e) {
-      console.warn("Error obteniendo reviews de Rainforest", e);
+      console.warn("Error obteniendo info técnica de Rainforest", e);
     }
 
-    // 2. Generar FODA usando DeepSeek
+    // 2. Generar FODA y Análisis de Competencia usando DeepSeek
     let foda = {
       strength: "Sin datos",
       weakness: "Sin datos",
       opportunity: "Sin datos",
-      threat: "Sin datos"
+      threat: "Sin datos",
+      direct_competition: "Media - Estimación genérica",
+      indirect_competition: "Media - Estimación genérica"
     };
 
-    if (rawReviews.length > 0) {
+    if (rawReviews.length > 0 || search_term) {
       const dsPrompt = `
       Eres un consultor experto en Amazon FBA.
-      Analiza las siguientes reseñas reales de clientes para el producto "${title}" (ASIN: ${asin}) y genera un análisis FODA enfocado a un competidor que quiere entrar a vender este producto.
+      Tienes dos tareas para el producto "${title}" (ASIN: ${asin}) buscado bajo el término "${search_term || category}":
+
+      1. FODA: Analiza las reseñas reales (si las hay) y genera un análisis FODA enfocado a un competidor.
+      2. COMPETENCIA: Estima el nivel de competencia directa e indirecta basándote puramente en la naturaleza del producto, su categoría en Amazon y el término de búsqueda. 
 
       RESEÑAS:
       ${JSON.stringify(rawReviews)}
 
       Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
       {
-        "strength": "texto corto con los puntos fuertes según los clientes",
+        "strength": "texto corto con los puntos fuertes según los clientes (o asunciones si no hay reseñas)",
         "weakness": "texto corto con las debilidades y quejas principales",
         "opportunity": "texto corto de cómo mejorar el producto para ganar al competidor",
-        "threat": "texto corto sobre los mayores riesgos de vender este producto"
+        "threat": "texto corto sobre los mayores riesgos",
+        "direct_competition": "Alta, Media o Baja, seguido de un guión y tu justificación muy corta (ej. Alta - Muchos importadores chinos con mismo diseño)",
+        "indirect_competition": "Alta, Media o Baja, seguido de un guión y justificación corta de productos sustitutos"
       }
       `;
 
@@ -105,14 +163,6 @@ export async function POST(req: Request) {
       } catch (e) {
         console.warn("Error generando FODA con DeepSeek", e);
       }
-    } else {
-      // Fallback si el producto no tiene reseñas
-      foda = {
-        strength: "El producto no cuenta con reseñas suficientes para analizar.",
-        weakness: "La falta de reseñas dificulta el análisis de debilidades.",
-        opportunity: "Si no tiene reseñas, un listing optimizado con VINE puede dominar rápido.",
-        threat: "Poca validación del mercado en Amazon MX."
-      };
     }
 
     // 3. Guardar en Supabase
@@ -134,6 +184,11 @@ export async function POST(req: Request) {
           foda_opportunity: foda.opportunity,
           foda_threat: foda.threat,
           project_name: project_name || "General",
+          sellers_count: sellers_count,
+          monthly_units: monthly_units,
+          selling_time: selling_time,
+          direct_competition: foda.direct_competition,
+          indirect_competition: foda.indirect_competition
         }
       ])
       .select();
