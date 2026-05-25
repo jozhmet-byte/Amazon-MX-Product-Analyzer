@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { calculateProfitability } from "@/lib/fba-calculator";
 
 const RAINFOREST_API_KEY = process.env.RAINFOREST_API_KEY;
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -98,6 +99,57 @@ export async function POST(req: Request) {
         if (dateAvailableStr) {
           selling_time = dateAvailableStr;
         }
+
+        // Extracción de Dimensiones y Peso para Calculadora FBA
+        let dimsString = rfData.product.dimensions || "";
+        if (!dimsString && rfData.product.specifications) {
+          const spec = rfData.product.specifications.find((s: any) => 
+            s.name?.toLowerCase().includes("dimensiones") || 
+            s.name?.toLowerCase().includes("dimensions") ||
+            s.name?.toLowerCase().includes("peso") ||
+            s.name?.toLowerCase().includes("weight")
+          );
+          if (spec) dimsString += " " + spec.value;
+        }
+        if (rfData.product.weight) {
+          dimsString += " " + rfData.product.weight;
+        }
+        if (!dimsString && rfData.product.product_information) {
+          for (const key of Object.keys(rfData.product.product_information)) {
+            if (key.toLowerCase().includes("dimensiones") || key.toLowerCase().includes("dimensions") || key.toLowerCase().includes("peso") || key.toLowerCase().includes("weight")) {
+              dimsString += " " + rfData.product.product_information[key];
+            }
+          }
+        }
+
+        let l = 15, w = 10, h = 5, kg = 0.3; // Valores estándar por defecto
+        if (dimsString) {
+          // Extraer L x W x H
+          const matchDims = dimsString.match(/([\d\.]+)\s*[xX\*]\s*([\d\.]+)\s*[xX\*]\s*([\d\.]+)\s*(cm|inches|pulgadas|in)/i);
+          if (matchDims) {
+            const isInches = /inch|in|pulgadas/i.test(matchDims[4]);
+            const mult = isInches ? 2.54 : 1;
+            l = parseFloat(matchDims[1]) * mult;
+            w = parseFloat(matchDims[2]) * mult;
+            h = parseFloat(matchDims[3]) * mult;
+          }
+          // Extraer Peso
+          const matchWeight = dimsString.match(/([\d\.]+)\s*(kg|g|kilogram[so]|gram[so]|libras?|lbs?|ounces|onzas?|oz)/i);
+          if (matchWeight) {
+            const rawW = parseFloat(matchWeight[1]);
+            const unit = matchWeight[2].toLowerCase();
+            if (unit.includes('kg') || unit.includes('kilo')) kg = rawW;
+            else if (unit === 'g' || unit.includes('gram')) kg = rawW / 1000;
+            else if (unit.includes('lb') || unit.includes('libra')) kg = rawW * 0.453592;
+            else if (unit.includes('oz') || unit.includes('onza')) kg = rawW * 0.0283495;
+          }
+        }
+        
+        // Auto-calcular FBA Fees
+        const fbaResult = calculateProfitability(parseFloat(price) || 0, 0, 15, { length: l, width: w, height: h, weight: kg });
+        // Inyectamos el costo total a la base de datos!
+        body.amazon_fees = fbaResult.totalAmazonFees;
+
       }
     } catch (e) {
       console.warn("Error obteniendo info técnica de Rainforest", e);
@@ -188,7 +240,8 @@ export async function POST(req: Request) {
           monthly_units: monthly_units,
           selling_time: selling_time,
           direct_competition: foda.direct_competition,
-          indirect_competition: foda.indirect_competition
+          indirect_competition: foda.indirect_competition,
+          amazon_fees: body.amazon_fees || 0
         }
       ])
       .select();
