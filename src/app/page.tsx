@@ -1,441 +1,273 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useCampaign } from "@/context/CampaignContext";
 import { supabase } from "@/lib/supabase";
-import { Search, Sparkles, TrendingUp, AlertCircle, ShoppingCart, Save, CheckCircle2, Loader2, X, FolderPlus } from "lucide-react";
+import { Folder, FolderPlus, Trash2, ArrowRight, Play, Database, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface Product {
-  asin: string;
-  title: string;
-  price: number;
-  image: string;
-  reviews: number;
-  rating: number;
-  is_prime: boolean;
-  bestseller_rank: string | number;
+interface CampaignStats {
+  [key: string]: {
+    count: number;
+    avgPrice: number;
+    avgRating: number;
+  };
 }
 
-interface Analysis {
-  winner_subnicho: { name: string; reason: string };
-  emerging_opportunity: { name: string; reason: string };
-  red_alert: { name: string; reason: string };
-  pivot_idea: { name: string; reason: string };
-}
+export default function CampaignHubPage() {
+  const router = useRouter();
+  const {
+    activeCampaign,
+    setActiveCampaign,
+    campaigns,
+    isLoadingCampaigns,
+    createCampaign,
+    deleteCampaign,
+    refreshCampaigns
+  } = useCampaign();
 
-// Función heurística rápida para calificar la competencia
-const getViabilityBadge = (reviews: number, rating: number) => {
-  if (reviews > 1000) return <span className="bg-red-900/40 text-red-400 border border-red-800 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Saturado (Difícil)</span>;
-  if (rating < 4.0 && reviews > 10) return <span className="bg-[#FF9900]/20 text-[#FF9900] border border-[#FF9900]/50 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Oportunidad de Mejora</span>;
-  if (reviews < 150) return <span className="bg-green-900/40 text-green-400 border border-green-800 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Excelente (Baja Competencia)</span>;
-  return <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] px-2 py-0.5 rounded-full mt-1 w-fit">Regular (Competencia Media)</span>;
-};
+  const [newCampaignName, setNewCampaignName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [stats, setStats] = useState<CampaignStats>({});
+  const [deletingName, setDeletingName] = useState<string | null>(null);
 
-const getViabilityStatus = (reviews: number, rating: number) => {
-  if (reviews > 1000) return "Saturado";
-  if (rating < 4.0 && reviews > 10) return "Mejora";
-  if (reviews < 150) return "Excelente";
-  return "Regular";
-};
-
-export default function NicheHunterPage() {
-  const [keyword, setKeyword] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [error, setError] = useState("");
-  const [filter, setFilter] = useState("Todos");
-  const [savingAsin, setSavingAsin] = useState<string | null>(null);
-  const [savedAsins, setSavedAsins] = useState<Set<string>>(new Set());
-
-  // Modal de Proyectos
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [productToSave, setProductToSave] = useState<Product | null>(null);
-  const [existingProjects, setExistingProjects] = useState<string[]>([]);
-  const [selectedProject, setSelectedProject] = useState("General");
-  const [newProjectName, setNewProjectName] = useState("");
-  const [isCreatingNew, setIsCreatingNew] = useState(false);
-
+  // Cargar estadísticas de productos para cada campaña
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    async function loadStats() {
+      const { data, error } = await supabase
+        .from("saved_products")
+        .select("project_name, price, rating");
 
-  const fetchProjects = async () => {
-    const { data, error } = await supabase
-      .from("saved_products")
-      .select("project_name");
-      
-    if (!error && data) {
-      const uniqueProjects = Array.from(new Set(data.map(d => d.project_name).filter(Boolean)));
-      if (!uniqueProjects.includes("General")) uniqueProjects.unshift("General");
-      setExistingProjects(uniqueProjects as string[]);
-    }
-  };
+      if (!error && data) {
+        const tempStats: CampaignStats = {};
+        data.forEach(p => {
+          const proj = p.project_name || "General";
+          if (!tempStats[proj]) {
+            tempStats[proj] = { count: 0, avgPrice: 0, avgRating: 0 };
+          }
+          tempStats[proj].count += 1;
+          tempStats[proj].avgPrice += p.price || 0;
+          tempStats[proj].avgRating += p.rating || 0;
+        });
 
-  const filteredProducts = products.filter(p => {
-    if (filter === "Todos") return true;
-    return getViabilityStatus(p.reviews, p.rating) === filter;
-  });
+        // Calcular promedios
+        Object.keys(tempStats).forEach(key => {
+          const count = tempStats[key].count;
+          if (count > 0) {
+            tempStats[key].avgPrice /= count;
+            tempStats[key].avgRating /= count;
+          }
+        });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const q = params.get("q");
-      if (q) {
-        setKeyword(q);
-        executeSearch(q);
+        setStats(tempStats);
       }
     }
-  }, []);
 
-  const executeSearch = async (queryToSearch: string) => {
-    setIsSearching(true);
-    setError("");
-    setProducts([]);
-    setAnalysis(null);
-
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: queryToSearch })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al buscar");
-      }
-
-      setProducts(data.products || []);
-      setAnalysis(data.analysis || null);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsSearching(false);
+    if (campaigns.length > 0) {
+      loadStats();
     }
-  };
+  }, [campaigns]);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword) return;
-    executeSearch(keyword);
-  };
+    if (!newCampaignName.trim()) return;
 
-  const handleSaveProduct = async (product: Product) => {
-    if (savingAsin || savedAsins.has(product.asin)) return;
-    setProductToSave(product);
-    setIsModalOpen(true);
-  };
+    setIsCreating(true);
+    const success = await createCampaign(newCampaignName.trim());
+    setIsCreating(false);
 
-  const confirmSaveProduct = async () => {
-    if (!productToSave) return;
-    
-    const finalProject = isCreatingNew ? (newProjectName.trim() || "General") : selectedProject;
-    
-    setIsModalOpen(false);
-    setSavingAsin(productToSave.asin);
-    
-    try {
-      const res = await fetch("/api/products/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          asin: productToSave.asin,
-          title: productToSave.title,
-          price: productToSave.price,
-          reviews: productToSave.reviews,
-          rating: productToSave.rating,
-          rank_24h: productToSave.bestseller_rank,
-          category: "General", 
-          search_term: keyword,
-          link: `https://www.amazon.com.mx/dp/${productToSave.asin}`,
-          project_name: finalProject
-        })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Error al guardar");
-      }
-
-      setSavedAsins(prev => new Set(prev).add(productToSave.asin));
-      
-      // Actualizar lista de proyectos si es uno nuevo
-      if (isCreatingNew && newProjectName.trim()) {
-        if (!existingProjects.includes(newProjectName.trim())) {
-          setExistingProjects(prev => [...prev, newProjectName.trim()]);
-        }
-      }
-    } catch (err: any) {
-      alert("Error al guardar: " + err.message);
-    } finally {
-      setSavingAsin(null);
-      setProductToSave(null);
-      setNewProjectName("");
-      setIsCreatingNew(false);
+    if (success) {
+      setNewCampaignName("");
+      // Redirigir directamente al buscador al crear una nueva campaña
+      router.push("/hunter");
+    } else {
+      alert("Error al crear la campaña. Recuerda que no puede llamarse 'General'.");
     }
+  };
+
+  const handleDelete = async (name: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar seleccionar la campaña al hacer clic en borrar
+    if (confirm(`¿Estás seguro de que deseas eliminar la campaña "${name}"? Esto borrará también todos los productos asociados en la base de datos.`)) {
+      setDeletingName(name);
+      await deleteCampaign(name);
+      setDeletingName(null);
+    }
+  };
+
+  const handleSelectCampaign = (name: string, route: string = "/hunter") => {
+    setActiveCampaign(name);
+    router.push(route);
   };
 
   return (
     <div className="flex flex-col h-full bg-[#0B0E14] overflow-y-auto">
       {/* Header */}
-      <div className="bg-[#0F1111] px-8 py-6 border-b border-zinc-800">
-        <h1 className="text-2xl font-bold text-white flex items-center mb-2">
-          <Search className="w-6 h-6 mr-3 text-[#FF9900]" />
-          Niche Hunter
-        </h1>
-        <p className="text-zinc-400 text-sm">
-          Descubre productos rentables y subnichos de baja competencia en Amazon MX usando IA.
-        </p>
+      <div className="bg-[#0F1111] px-8 py-6 border-b border-zinc-800 flex justify-between items-center shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center mb-2">
+            <Folder className="w-6 h-6 mr-3 text-[#FF9900]" />
+            Gestor de Campañas
+          </h1>
+          <p className="text-zinc-400 text-sm">
+            Crea o selecciona una campaña de análisis antes de comenzar tus búsquedas de producto.
+          </p>
+        </div>
+
+        {activeCampaign && (
+          <div className="flex items-center gap-3 bg-zinc-800/40 border border-zinc-700 px-4 py-2 rounded-xl">
+            <div className="text-xs">
+              <span className="text-zinc-500 uppercase font-bold block">Campaña Activa</span>
+              <span className="text-white font-semibold">{activeCampaign}</span>
+            </div>
+            <button 
+              onClick={() => setActiveCampaign(null)}
+              className="text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-medium px-2 py-1 rounded transition-colors"
+            >
+              Desactivar
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
-        {/* Barra de búsqueda */}
-        <form onSubmit={handleSearch} className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+      <div className="p-8 max-w-6xl mx-auto w-full space-y-8">
+        {/* Sección de Creación */}
+        <div className="bg-[#1A1D24] p-6 rounded-xl border border-zinc-800 shadow-xl">
+          <h2 className="text-lg font-bold text-white mb-2 flex items-center">
+            <FolderPlus className="w-5 h-5 mr-2 text-[#FF9900]" />
+            Nueva Campaña de Análisis
+          </h2>
+          <p className="text-zinc-400 text-sm mb-4">
+            Ingresa un nombre claro para tu nueva carpeta de análisis (ej: "Lámparas LED Verano", "Cocina 2026").
+          </p>
+          <form onSubmit={handleCreate} className="flex gap-4">
             <input
               type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Ingresa una palabra clave (ej: Peluches, Mochila táctica)..."
-              className="w-full bg-[#1A1D24] border border-zinc-700 rounded-lg py-3 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition-colors"
+              value={newCampaignName}
+              onChange={e => setNewCampaignName(e.target.value)}
+              placeholder="Nombre de la campaña..."
+              className="flex-1 bg-[#0B0E14] border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF9900] transition-colors"
+              disabled={isCreating}
             />
-          </div>
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="bg-[#FF9900] hover:bg-[#E88B00] text-black font-semibold px-8 py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center"
-          >
-            {isSearching ? "Buscando en Amazon MX..." : "Analizar Nicho"}
-          </button>
-        </form>
-
-        {error && (
-          <div className="p-4 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            {error}
-          </div>
-        )}
-
-        {/* Dashboard de Resultados */}
-        {!isSearching && products.length > 0 && (
-          <div className="space-y-6 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
-            {/* Análisis IA */}
-            {analysis && (
-              <div className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/30 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-indigo-300 flex items-center mb-4">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Análisis DeepSeek: Nichos Encontrados
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
-                    <div className="text-sm text-zinc-400 mb-1">Subnicho Ganador</div>
-                    <div className="text-white font-medium flex items-center mb-2">
-                      <TrendingUp className="w-4 h-4 mr-2 text-green-500" />
-                      {analysis.winner_subnicho.name}
-                    </div>
-                    <div className="text-xs text-zinc-500">{analysis.winner_subnicho.reason}</div>
-                  </div>
-                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
-                    <div className="text-sm text-zinc-400 mb-1">Oportunidad Emergente</div>
-                    <div className="text-white font-medium flex items-center mb-2">
-                      <TrendingUp className="w-4 h-4 mr-2 text-[#FF9900]" />
-                      {analysis.emerging_opportunity.name}
-                    </div>
-                    <div className="text-xs text-zinc-500">{analysis.emerging_opportunity.reason}</div>
-                  </div>
-                  <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
-                    <div className="text-sm text-zinc-400 mb-1">Alerta Roja</div>
-                    <div className="text-white font-medium flex items-center mb-2">
-                      <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
-                      {analysis.red_alert.name}
-                    </div>
-                    <div className="text-xs text-zinc-500">{analysis.red_alert.reason}</div>
-                  </div>
-                  <div className="bg-[#0F1111] p-4 rounded-lg border border-indigo-500/30">
-                    <div className="text-sm text-indigo-400 mb-1">Sugerencia (Pivot)</div>
-                    <div className="text-white font-medium flex items-center mb-2">
-                      <Sparkles className="w-4 h-4 mr-2 text-indigo-400" />
-                      {analysis.pivot_idea?.name || "Buscando alternativas..."}
-                    </div>
-                    <div className="text-xs text-zinc-500">{analysis.pivot_idea?.reason}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tabla de Resultados (Estilo Helium 10) */}
-            <div className="bg-[#0F1111] rounded-xl border border-zinc-800 overflow-hidden">
-              <div className="px-6 py-4 border-b border-zinc-800 flex flex-col md:flex-row justify-between items-center bg-[#1A1D24] gap-4">
-                <div>
-                  <h3 className="font-semibold text-white">Top Productos Orgánicos de Amazon MX</h3>
-                  <span className="text-sm text-zinc-400">{filteredProducts.length} resultados filtrados</span>
-                </div>
-                <div>
-                  <select 
-                    value={filter} 
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="bg-[#0B0E14] border border-zinc-700 text-white text-sm rounded-md py-1.5 px-3 focus:outline-none focus:border-[#FF9900]"
-                  >
-                    <option value="Todos">Todos los niveles</option>
-                    <option value="Excelente">Excelente (Baja Competencia)</option>
-                    <option value="Regular">Regular (Competencia Media)</option>
-                    <option value="Mejora">Oportunidad de Mejora</option>
-                    <option value="Saturado">Saturado (Difícil)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-zinc-400">
-                  <thead className="text-xs uppercase bg-[#0B0E14] text-zinc-500">
-                    <tr>
-                      <th className="px-6 py-4 font-medium">Producto</th>
-                      <th className="px-6 py-4 font-medium">Precio (MXN)</th>
-                      <th className="px-6 py-4 font-medium">Ingresos Est. (30 días)</th>
-                      <th className="px-6 py-4 font-medium">Reseñas / Rating</th>
-                      <th className="px-6 py-4 font-medium text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.map((product, index) => (
-                      <tr key={`${product.asin}-${index}`} className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <img src={product.image} alt={product.title} className="w-12 h-12 rounded object-cover shrink-0" />
-                            <div>
-                              <div className="text-white font-medium line-clamp-2 max-w-md" title={product.title}>
-                                {product.title}
-                              </div>
-                              <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
-                                <span>ASIN: {product.asin}</span>
-                                {product.is_prime && <span className="text-blue-400 font-bold tracking-widest text-[10px]">PRIME</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-medium text-white">
-                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(product.price)}
-                        </td>
-                        <td className="px-6 py-4 text-green-400 font-medium">
-                          {/* Fórmula básica ilustrativa de ingresos si vendiera 100 uds al mes */}
-                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(product.price * 100)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-white font-medium">{product.rating} ★ <span className="text-zinc-500 font-normal text-xs">({product.reviews} res.)</span></span>
-                            {getViabilityBadge(product.reviews, product.rating)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleSaveProduct(product)}
-                            disabled={savingAsin === product.asin || savedAsins.has(product.asin)}
-                            className={`p-2 rounded-md border transition-colors ${
-                              savedAsins.has(product.asin)
-                                ? "bg-green-900/20 border-green-500/30 text-green-400"
-                                : "bg-indigo-900/20 border-indigo-500/30 text-indigo-400 hover:bg-indigo-900/40"
-                            }`}
-                            title={savedAsins.has(product.asin) ? "Guardado en Base de Datos" : "Guardar en Base de Datos y Generar FODA"}
-                          >
-                            {savingAsin === product.asin ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : savedAsins.has(product.asin) ? (
-                              <CheckCircle2 className="w-5 h-5" />
-                            ) : (
-                              <Save className="w-5 h-5" />
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        )}
-      </div>
-      {/* Modal de Selección de Proyecto */}
-      {isModalOpen && productToSave && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1A1D24] border border-zinc-800 rounded-xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center">
-                <FolderPlus className="w-5 h-5 mr-2 text-[#FF9900]" />
-                Guardar en Proyecto
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <p className="text-sm text-zinc-400 mb-6">
-              Estás a punto de guardar <strong className="text-white">"{productToSave.title.substring(0, 40)}..."</strong> y generar su FODA con IA. ¿En qué carpeta deseas organizarlo?
-            </p>
-
-            <div className="space-y-4 mb-8">
-              {!isCreatingNew ? (
-                <div>
-                  <label className="block text-xs text-zinc-500 uppercase font-bold mb-2">Seleccionar Carpeta Existente</label>
-                  <select 
-                    value={selectedProject}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full bg-[#0B0E14] border border-zinc-700 text-white rounded-md px-3 py-2 focus:outline-none focus:border-[#FF9900]"
-                  >
-                    {existingProjects.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                  <button 
-                    onClick={() => setIsCreatingNew(true)}
-                    className="mt-3 text-sm text-[#FF9900] hover:underline"
-                  >
-                    + Crear nueva carpeta
-                  </button>
-                </div>
+            <button
+              type="submit"
+              disabled={isCreating || !newCampaignName.trim()}
+              className="bg-[#FF9900] hover:bg-[#E88B00] text-black font-semibold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 flex items-center shrink-0"
+            >
+              {isCreating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
-                <div>
-                  <label className="block text-xs text-zinc-500 uppercase font-bold mb-2">Nombre de la Nueva Carpeta</label>
-                  <input 
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    placeholder="Ej. Análisis Diciembre, Utensilios..."
-                    autoFocus
-                    className="w-full bg-[#0B0E14] border border-zinc-700 text-white rounded-md px-3 py-2 focus:outline-none focus:border-[#FF9900]"
-                  />
-                  <button 
-                    onClick={() => setIsCreatingNew(false)}
-                    className="mt-3 text-sm text-zinc-400 hover:text-white"
-                  >
-                    Cancelar y elegir existente
-                  </button>
-                </div>
+                <FolderPlus className="w-4 h-4 mr-2" />
               )}
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={confirmSaveProduct}
-                disabled={isCreatingNew && !newProjectName.trim()}
-                className="px-4 py-2 rounded-md bg-[#FF9900] hover:bg-[#E88C00] text-black font-semibold transition-colors disabled:opacity-50 flex items-center"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Confirmar y Generar FODA
-              </button>
-            </div>
-          </div>
+              Crear e Iniciar
+            </button>
+          </form>
         </div>
-      )}
+
+        {/* Listado de Campañas */}
+        <div>
+          <h2 className="text-lg font-bold text-zinc-300 mb-4 uppercase tracking-wider text-sm">Tus Campañas Recientes</h2>
+          
+          {isLoadingCampaigns ? (
+            <div className="flex items-center justify-center py-12 text-zinc-500">
+              <Loader2 className="w-6 h-6 animate-spin mr-2" />
+              Cargando tus campañas...
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="border border-dashed border-zinc-800 rounded-xl p-12 text-center text-zinc-500">
+              <Folder className="w-12 h-12 mx-auto mb-3 opacity-20 text-[#FF9900]" />
+              <p className="font-medium text-zinc-400 mb-1">Aún no tienes campañas creadas</p>
+              <p className="text-xs">Usa el formulario superior para crear tu primera campaña y comenzar a analizar nichos.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {campaigns.map(name => {
+                const campaignStat = stats[name] || { count: 0, avgPrice: 0, avgRating: 0 };
+                const isActive = activeCampaign === name;
+
+                return (
+                  <div
+                    key={name}
+                    onClick={() => handleSelectCampaign(name, "/hunter")}
+                    className={`relative bg-[#1A1D24] border rounded-xl p-5 cursor-pointer hover:border-zinc-500 hover:shadow-2xl transition-all group flex flex-col justify-between h-48 ${
+                      isActive ? "border-[#FF9900] shadow-[0_0_15px_rgba(255,153,0,0.05)] bg-[#1e2129]" : "border-zinc-800"
+                    }`}
+                  >
+                    <div>
+                      {/* Título de Campaña */}
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-white font-semibold text-lg line-clamp-1 group-hover:text-[#FF9900] transition-colors pr-8">
+                          {name}
+                        </span>
+                        
+                        {/* Botón Borrar */}
+                        <button
+                          onClick={(e) => handleDelete(name, e)}
+                          disabled={deletingName === name}
+                          className="absolute top-5 right-5 text-zinc-500 hover:text-red-400 p-1 rounded hover:bg-zinc-800/80 transition-colors"
+                          title="Eliminar campaña"
+                        >
+                          {deletingName === name ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Estado Activo */}
+                      {isActive && (
+                        <span className="inline-flex items-center text-[10px] bg-[#FF9900]/10 text-[#FF9900] font-semibold px-2 py-0.5 rounded-full mb-3 border border-[#FF9900]/20">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Activa
+                        </span>
+                      )}
+
+                      {/* Métricas rápidas */}
+                      <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400 mt-2">
+                        <div>
+                          <span className="text-zinc-600 block text-[10px] uppercase font-bold">Productos</span>
+                          <span className="text-white font-medium">{campaignStat.count} uds.</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-600 block text-[10px] uppercase font-bold">Precio Promedio</span>
+                          <span className="text-white font-medium">
+                            {campaignStat.count > 0
+                              ? `$${campaignStat.avgPrice.toFixed(2)}`
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acciones Rápidas */}
+                    <div className="flex gap-2 border-t border-zinc-800/60 pt-3 mt-4 text-xs">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectCampaign(name, "/hunter");
+                        }}
+                        className="flex-1 bg-zinc-850 hover:bg-zinc-800 text-white font-semibold py-1.5 px-3 rounded border border-zinc-800 flex items-center justify-center transition-colors"
+                      >
+                        <Play className="w-3 h-3 mr-1 text-[#FF9900]" />
+                        Buscar
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectCampaign(name, "/database");
+                        }}
+                        className="flex-1 bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-400 font-semibold py-1.5 px-3 rounded border border-emerald-900/40 flex items-center justify-center transition-colors"
+                      >
+                        <Database className="w-3 h-3 mr-1" />
+                        Tabla FBA
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

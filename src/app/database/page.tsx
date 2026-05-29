@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Database, Download, ExternalLink, Loader2 } from "lucide-react";
+import { Database, Download, ExternalLink, Loader2, Calculator, Trash2, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useCampaign } from "@/context/CampaignContext";
+import { useRouter } from "next/navigation";
 
 interface SavedProduct {
   id: string;
@@ -41,35 +43,36 @@ interface SavedProduct {
 }
 
 export default function DatabasePage() {
+  const router = useRouter();
+  const { activeCampaign } = useCampaign();
   const [products, setProducts] = useState<SavedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [activeProject, setActiveProject] = useState<string>("General");
-  const [availableProjects, setAvailableProjects] = useState<string[]>(["General"]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (activeCampaign) {
+      fetchProducts();
+    }
+  }, [activeCampaign]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from("saved_products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("saved_products")
+        .select("*")
+        .eq("project_name", activeCampaign)
+        .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setProducts(data);
-      
-      const uniqueProjects = Array.from(new Set(data.map(p => p.project_name).filter(Boolean)));
-      if (!uniqueProjects.includes("General")) uniqueProjects.unshift("General");
-      setAvailableProjects(uniqueProjects as string[]);
-      
-      if (uniqueProjects.length > 0 && !uniqueProjects.includes(activeProject)) {
-        setActiveProject(uniqueProjects[0] as string);
+      if (!error && data) {
+        setProducts(data);
       }
+    } catch (e) {
+      console.error("Error loading products", e);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleUpdateField = async (id: string, field: keyof SavedProduct, value: string | number) => {
@@ -89,9 +92,33 @@ export default function DatabasePage() {
     setSavingId(null);
   };
 
+  const handleDeleteProduct = async (id: string, title: string) => {
+    if (!confirm(`¿Deseas eliminar "${title.substring(0, 30)}..." de esta tabla de análisis?`)) return;
+
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from("saved_products")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      console.error("Error deleting product", e);
+      alert("No se pudo eliminar el producto.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSendToCalculator = (p: SavedProduct) => {
+    // Redirigir a la calculadora precargando los parámetros
+    router.push(`/calculator?asin=${p.asin}&price=${p.price}&cost=${p.cost || 0}&fromTable=true`);
+  };
+
   const exportToCSV = () => {
-    const filteredExportProducts = products.filter(p => (p.project_name || "General") === activeProject);
-    if (filteredExportProducts.length === 0) return;
+    if (products.length === 0) return;
     
     const headers = [
       // Info
@@ -116,11 +143,14 @@ export default function DatabasePage() {
 
     const csvRows = [headers.join(",")];
 
-    filteredExportProducts.forEach(p => {
-      const utilidad = (p.price || 0) - (p.amazon_fees || 0) - (p.cost || 0);
-      const margen = p.price > 0 ? (utilidad / p.price) * 100 : 0;
-      const roi = p.cost > 0 ? (utilidad / p.cost) * 100 : 0;
-      const factorX = p.cost > 0 ? (p.price / p.cost) : 0;
+    products.forEach(p => {
+      const profitabilityPrice = p.price || 0;
+      const profitabilityFees = p.amazon_fees || 0;
+      const profitabilityCost = p.cost || 0;
+      const utilidad = profitabilityPrice - profitabilityFees - profitabilityCost;
+      const margen = profitabilityPrice > 0 ? (utilidad / profitabilityPrice) * 100 : 0;
+      const roi = profitabilityCost > 0 ? (utilidad / profitabilityCost) * 100 : 0;
+      const factorX = profitabilityCost > 0 ? (profitabilityPrice / profitabilityCost) : 0;
 
       const row = [
         p.title, p.asin, p.category, p.subcategory, p.search_term, p.link,
@@ -139,7 +169,7 @@ export default function DatabasePage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Amazon_FBA_Tracker_${activeProject.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `Tabla_Analisis_${activeCampaign?.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -152,38 +182,67 @@ export default function DatabasePage() {
     return "bg-zinc-800 text-zinc-300 border-zinc-600";
   };
 
+  // Si no hay campaña activa, forzamos a seleccionar una primero
+  if (!activeCampaign) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-[#0B0E14] text-center p-8">
+        <div className="bg-[#1A1D24] p-8 rounded-2xl border border-zinc-800 shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 bg-[#FF9900]/10 border border-[#FF9900]/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-[#FF9900]" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Tabla de Análisis Bloqueada</h2>
+          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+            Debes tener una campaña activa para poder visualizar su tabla de análisis de producto correspondiente.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link 
+              href="/"
+              className="bg-[#FF9900] hover:bg-[#E88C00] text-black font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center text-sm"
+            >
+              Ir a Campañas
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#0B0E14] overflow-hidden">
+      {/* Header */}
       <div className="bg-[#0F1111] px-8 py-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center mb-1">
             <Database className="w-6 h-6 mr-3 text-[#FF9900]" />
-            Base de Datos FBA
+            Tabla de Análisis de Producto
           </h1>
           <p className="text-zinc-400 text-sm flex items-center">
-            Tracker central de ASINs y rentabilidad. 
-            {savingId && <span className="ml-4 text-xs text-[#FF9900] flex items-center"><Loader2 className="w-3 h-3 animate-spin mr-1"/> Guardando...</span>}
+            Campañas: <strong className="text-white ml-1">"{activeCampaign}"</strong>
+            {savingId && (
+              <span className="ml-4 text-xs text-[#FF9900] flex items-center">
+                <Loader2 className="w-3 h-3 animate-spin mr-1"/> Guardando cambios...
+              </span>
+            )}
+            {deletingId && (
+              <span className="ml-4 text-xs text-red-500 flex items-center">
+                <Loader2 className="w-3 h-3 animate-spin mr-1"/> Eliminando...
+              </span>
+            )}
           </p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-[#1A1D24] border border-zinc-800 rounded-md px-3 py-1.5">
-            <span className="text-xs text-zinc-500 uppercase font-bold mr-2">Carpeta:</span>
-            <select 
-              value={activeProject}
-              onChange={(e) => setActiveProject(e.target.value)}
-              className="bg-transparent text-[#FF9900] font-semibold text-sm focus:outline-none cursor-pointer"
-            >
-              {availableProjects.map(p => (
-                <option key={p} value={p} className="bg-[#1A1D24] text-white">{p}</option>
-              ))}
-            </select>
+          <div className="flex items-center bg-[#1A1D24] border border-zinc-800 rounded-md px-3 py-1.5 text-xs">
+            <span className="text-zinc-500 uppercase font-bold mr-2">Campaña:</span>
+            <span className="text-[#FF9900] font-semibold">{activeCampaign}</span>
+            <Link href="/" className="ml-3 text-zinc-400 hover:text-white underline">cambiar</Link>
           </div>
 
           <button 
             onClick={exportToCSV}
-            disabled={products.filter(p => (p.project_name || "General") === activeProject).length === 0}
-            className="bg-green-700 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md transition-colors flex items-center disabled:opacity-50"
+            disabled={products.length === 0}
+            className="bg-green-700 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md transition-colors flex items-center disabled:opacity-50 text-xs"
           >
             <Download className="w-4 h-4 mr-2" />
             Exportar CSV
@@ -191,13 +250,23 @@ export default function DatabasePage() {
         </div>
       </div>
 
+      {/* Grid / Spreadsheet Container */}
       <div className="flex-1 overflow-auto bg-[#0B0E14] p-4">
         {isLoading ? (
-          <div className="flex justify-center py-20 text-zinc-500 animate-pulse">Cargando base de datos...</div>
-        ) : products.filter(p => (p.project_name || "General") === activeProject).length === 0 ? (
-          <div className="text-center py-20">
-            <h2 className="text-xl text-zinc-400 mb-4">No tienes productos en la carpeta "{activeProject}".</h2>
-            <Link href="/" className="text-[#FF9900] hover:underline">Ir a Niche Hunter para guardar productos</Link>
+          <div className="flex justify-center py-20 text-zinc-500 animate-pulse">Cargando tabla de análisis...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-20 bg-[#1A1D24] border border-zinc-800 rounded-xl max-w-xl mx-auto p-8 shadow-xl mt-8">
+            <h2 className="text-lg text-zinc-400 mb-2 font-semibold">Esta campaña no tiene productos guardados aún.</h2>
+            <p className="text-zinc-500 text-sm mb-6">
+              Ve a Niche Hunter para analizar palabras clave y guardar los productos que desees seguir en tu análisis.
+            </p>
+            <Link 
+              href="/hunter" 
+              className="bg-[#FF9900] hover:bg-[#E88C00] text-black font-semibold px-6 py-2.5 rounded-lg transition-colors inline-flex items-center text-sm"
+            >
+              Ir a Niche Hunter
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
           </div>
         ) : (
           <div className="inline-block min-w-max border border-zinc-800 rounded-lg overflow-hidden bg-[#1A1D24]">
@@ -205,7 +274,7 @@ export default function DatabasePage() {
               <thead>
                 {/* Cabeceras de Grupos */}
                 <tr>
-                  <th colSpan={6} className="bg-indigo-950/80 border-b border-r border-indigo-900/50 py-1.5 text-center text-indigo-300 font-bold uppercase tracking-wider">INFORMACIÓN DEL PRODUCTO</th>
+                  <th colSpan={8} className="bg-indigo-950/80 border-b border-r border-indigo-900/50 py-1.5 text-center text-indigo-300 font-bold uppercase tracking-wider">INFORMACIÓN DEL PRODUCTO</th>
                   <th colSpan={6} className="bg-violet-950/60 border-b border-r border-violet-900/50 py-1.5 text-center text-violet-300 font-bold uppercase tracking-wider">ANÁLISIS DE MERCADO Y COMPETENCIA</th>
                   <th colSpan={5} className="bg-green-950/60 border-b border-r border-green-900/50 py-1.5 text-center text-green-300 font-bold uppercase tracking-wider">MÉTRICAS DE RENDIMIENTO Y RANKING</th>
                   <th colSpan={7} className="bg-emerald-950/80 border-b border-r border-emerald-900/50 py-1.5 text-center text-emerald-300 font-bold uppercase tracking-wider">MÉTRICAS FINANCIERAS</th>
@@ -220,7 +289,9 @@ export default function DatabasePage() {
                   <th className="px-2 py-2 font-medium border-r border-zinc-800">CATEGORÍA</th>
                   <th className="px-2 py-2 font-medium border-r border-zinc-800">SUBCATEGORÍA</th>
                   <th className="px-2 py-2 font-medium border-r border-zinc-800">TÉRMINOS BÚSQUEDA</th>
-                  <th className="px-2 py-2 font-medium border-r border-indigo-900/50 text-center">LINK</th>
+                  <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center">LINK</th>
+                  <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center text-[#FF9900]">SIMULAR</th>
+                  <th className="px-2 py-2 font-medium border-r border-indigo-900/50 text-center text-red-400">BORRAR</th>
                   
                   {/* Mercado */}
                   <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center">Nº VENDEDORES</th>
@@ -260,11 +331,14 @@ export default function DatabasePage() {
                 </tr>
               </thead>
               <tbody>
-                {products.filter(p => (p.project_name || "General") === activeProject).map(p => {
-                  const utilidad = (p.price || 0) - (p.amazon_fees || 0) - (p.cost || 0);
-                  const margen = p.price > 0 ? (utilidad / p.price) * 100 : 0;
-                  const roi = p.cost > 0 ? (utilidad / p.cost) * 100 : 0;
-                  const factorX = p.cost > 0 ? (p.price / p.cost) : 0;
+                {products.map(p => {
+                  const pricingPrice = p.price || 0;
+                  const pricingFees = p.amazon_fees || 0;
+                  const pricingCost = p.cost || 0;
+                  const utilidad = pricingPrice - pricingFees - pricingCost;
+                  const margen = pricingPrice > 0 ? (utilidad / pricingPrice) * 100 : 0;
+                  const roi = pricingCost > 0 ? (utilidad / pricingCost) * 100 : 0;
+                  const factorX = pricingCost > 0 ? (pricingPrice / pricingCost) : 0;
 
                   return (
                     <tr key={p.id} className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-colors">
@@ -280,10 +354,28 @@ export default function DatabasePage() {
                         />
                       </td>
                       <td className="px-2 py-1.5 border-r border-zinc-800 truncate max-w-[100px] text-zinc-400" title={p.search_term}>{p.search_term}</td>
-                      <td className="px-2 py-1.5 border-r border-indigo-900/50 text-center">
+                      <td className="px-2 py-1.5 border-r border-zinc-800 text-center">
                         <a href={p.link} target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-300">
                           <ExternalLink className="w-3.5 h-3.5 inline-block" />
                         </a>
+                      </td>
+                      <td className="px-2 py-1.5 border-r border-zinc-800 text-center">
+                        <button
+                          onClick={() => handleSendToCalculator(p)}
+                          className="p-1 rounded bg-[#FF9900]/10 border border-[#FF9900]/30 text-[#FF9900] hover:bg-[#FF9900]/30 transition-colors"
+                          title="Simular tarifas y ROI en la calculadora"
+                        >
+                          <Calculator className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                      <td className="px-2 py-1.5 border-r border-indigo-900/50 text-center">
+                        <button
+                          onClick={() => handleDeleteProduct(p.id, p.title)}
+                          className="p-1 rounded bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/40 transition-colors"
+                          title="Eliminar producto"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                       
                       {/* Mercado */}
