@@ -465,14 +465,11 @@ export default function DatabasePage() {
                         />
                       </td>
                       <td className="px-1 py-1 border-r border-zinc-800 text-center font-mono">
-                        <div className="flex items-center justify-center">
-                          <span className="text-zinc-500 mr-0.5">#</span>
-                          <input type="number" value={p.rank_24h || ""} 
-                            onChange={(e) => setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, rank_24h: parseInt(e.target.value) || 0 } : prod))}
-                            onBlur={(e) => handleUpdateField(p.id, "rank_24h", parseInt(e.target.value) || 0)}
-                            className="w-16 text-center bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-green-400 focus:outline-none"
-                          />
-                        </div>
+                        <input type="number" value={p.rank_24h || ""} 
+                          onChange={(e) => setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, rank_24h: parseInt(e.target.value) || 0 } : prod))}
+                          onBlur={(e) => handleUpdateField(p.id, "rank_24h", parseInt(e.target.value) || 0)}
+                          className="w-16 text-center bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-green-400 focus:outline-none"
+                        />
                       </td>
                       <td className="px-1 py-1 border-r border-green-900/50 text-center">
                         <input type="number" value={p.monthly_units || ""} 
