@@ -146,7 +146,13 @@ export async function POST(req: Request) {
         }
         
         // Auto-calcular FBA Fees
-        const fbaResult = calculateProfitability(parseFloat(price) || 0, 0, 15, { length: l, width: w, height: h, weight: kg });
+        const fbaResult = calculateProfitability(
+          parseFloat(price) || 0,
+          0,
+          0, // 0 activa el auto-cálculo por categoría en la librería
+          { length: l, width: w, height: h, weight: kg },
+          category || "General"
+        );
         // Inyectamos el costo total a la base de datos!
         body.amazon_fees = fbaResult.totalAmazonFees;
 

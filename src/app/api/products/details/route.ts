@@ -67,11 +67,17 @@ export async function POST(req: Request) {
       }
     }
 
+    let category = "General";
+    if (data.product.categories && Array.isArray(data.product.categories) && data.product.categories.length > 0) {
+      category = data.product.categories[0].name || "General";
+    }
+
     return NextResponse.json({
       success: true,
       title,
       image,
       price,
+      category,
       dimensions: { length: l, width: w, height: h, weight: kg }
     });
 

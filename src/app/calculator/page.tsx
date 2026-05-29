@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, Loader2, Calculator, DollarSign, Package, TrendingUp, AlertCircle, ArrowLeft } from "lucide-react";
-import { calculateProfitability } from "@/lib/fba-calculator";
+import { calculateProfitability, getReferralFeePercent } from "@/lib/fba-calculator";
 import { useCampaign } from "@/context/CampaignContext";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -12,6 +12,7 @@ interface SavedProductSummary {
   title: string;
   price: number;
   cost: number;
+  category?: string;
 }
 
 export default function CalculatorPage() {
@@ -29,16 +30,18 @@ export default function CalculatorPage() {
   const [cost, setCost] = useState<number>(0);
   const [referralPercent, setReferralPercent] = useState<number>(15);
   
+  const [category, setCategory] = useState<string>("General");
+  
   const [dims, setDims] = useState({ length: 15, width: 10, height: 5, weight: 0.3 });
   const [results, setResults] = useState<any>(null);
 
   // Recalcular cuando cambien las variables interactivas
   useEffect(() => {
     if (price > 0 || dims.length > 0) {
-      const res = calculateProfitability(price, cost, referralPercent, dims);
+      const res = calculateProfitability(price, cost, referralPercent, dims, category);
       setResults(res);
     }
-  }, [price, cost, referralPercent, dims]);
+  }, [price, cost, referralPercent, dims, category]);
 
   // Cargar productos de la campaña activa para la carga rápida
   useEffect(() => {
@@ -46,7 +49,7 @@ export default function CalculatorPage() {
       if (!activeCampaign) return;
       const { data, error } = await supabase
         .from("saved_products")
-        .select("asin, title, price, cost")
+        .select("asin, title, price, cost, category")
         .eq("project_name", activeCampaign);
 
       if (!error && data) {
@@ -63,12 +66,18 @@ export default function CalculatorPage() {
       const urlAsin = params.get("asin");
       const urlPrice = params.get("price");
       const urlCost = params.get("cost");
+      const urlCategory = params.get("category");
       const fromTableParam = params.get("fromTable");
 
       if (urlAsin) {
         setAsin(urlAsin);
-        if (urlPrice) setPrice(parseFloat(urlPrice) || 0);
+        const parsedPrice = parseFloat(urlPrice || "0");
+        if (urlPrice) setPrice(parsedPrice);
         if (urlCost) setCost(parseFloat(urlCost) || 0);
+        if (urlCategory) {
+          setCategory(urlCategory);
+          setReferralPercent(getReferralFeePercent(urlCategory, parsedPrice));
+        }
         if (fromTableParam === "true") setIsFromTable(true);
         
         executeLoadDetails(urlAsin);
@@ -93,7 +102,12 @@ export default function CalculatorPage() {
       
       setProductData({ title: data.title, image: data.image });
       // Mantener precio y costo si ya venían pre-cargados de la URL o tabla
+      const resolvedPrice = price > 0 ? price : data.price;
       setPrice(prev => prev > 0 ? prev : data.price);
+      if (data.category) {
+        setCategory(data.category);
+        setReferralPercent(getReferralFeePercent(data.category, resolvedPrice));
+      }
       setDims(data.dimensions);
       
     } catch (err: any) {
@@ -120,6 +134,9 @@ export default function CalculatorPage() {
       setAsin(prod.asin);
       setPrice(prod.price);
       setCost(prod.cost || 0);
+      const resolvedCategory = prod.category || "General";
+      setCategory(resolvedCategory);
+      setReferralPercent(getReferralFeePercent(resolvedCategory, prod.price));
       executeLoadDetails(prod.asin);
     }
   };
@@ -209,11 +226,17 @@ export default function CalculatorPage() {
             
             {/* Producto Cargado */}
             {productData && (
-              <div className="bg-[#1A1D24] border border-zinc-800 rounded-xl p-4 flex gap-4 items-center shadow-lg">
-                <img src={productData.image} alt="Producto" className="w-16 h-16 object-contain rounded bg-white p-1" />
-                <div className="text-sm">
-                  <div className="text-white font-medium line-clamp-2">{productData.title}</div>
-                  <div className="text-[#FF9900] mt-1 text-[10px] font-semibold tracking-wider uppercase">DATOS EXTRAÍDOS</div>
+              <div className="bg-[#1A1D24] border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 shadow-lg">
+                <div className="flex gap-4 items-center">
+                  <img src={productData.image} alt="Producto" className="w-16 h-16 object-contain rounded bg-white p-1" />
+                  <div className="text-sm">
+                    <div className="text-white font-medium line-clamp-2">{productData.title}</div>
+                    <div className="text-[#FF9900] mt-1 text-[10px] font-semibold tracking-wider uppercase">DATOS EXTRAÍDOS</div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-xs border-t border-zinc-800/60 pt-2 text-zinc-400">
+                  <span>Categoría Detectada:</span>
+                  <span className="font-semibold text-white bg-zinc-800 px-2 py-0.5 rounded text-[10px]">{category}</span>
                 </div>
               </div>
             )}
