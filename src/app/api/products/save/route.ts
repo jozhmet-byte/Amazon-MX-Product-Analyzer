@@ -248,7 +248,7 @@ export async function POST(req: Request) {
 
     if (dbError) {
       if (dbError.code === "23505") { // Código de unique_violation en PostgreSQL
-        return NextResponse.json({ error: "Este producto ya está guardado en tu base de datos." }, { status: 409 });
+        return NextResponse.json({ error: "Este producto ya está guardado en esta campaña." }, { status: 409 });
       }
       throw dbError;
     }
