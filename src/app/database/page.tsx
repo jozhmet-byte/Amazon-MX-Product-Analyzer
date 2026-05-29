@@ -175,11 +175,43 @@ export default function DatabasePage() {
     document.body.removeChild(link);
   };
 
-  const getFactorXColor = (factorX: number) => {
-    if (factorX >= 6) return "bg-purple-900/80 text-purple-200 border-purple-500";
-    if (factorX >= 4) return "bg-blue-900/80 text-blue-200 border-blue-500";
-    if (factorX > 0 && factorX <= 2) return "bg-red-900/80 text-red-200 border-red-500";
-    return "bg-zinc-800 text-zinc-300 border-zinc-600";
+  const renderFactorXBadge = (factorX: number) => {
+    if (factorX <= 0) {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold border bg-zinc-900 text-zinc-500 border-zinc-800">
+          N/A
+        </span>
+      );
+    }
+
+    let label = "";
+    let classes = "";
+
+    if (factorX <= 1.5) {
+      label = `X${factorX.toFixed(1)} = NUNCA`;
+      classes = "bg-red-950/80 text-red-400 border-red-500/60";
+    } else if (factorX <= 2.2) {
+      label = `X${factorX.toFixed(1)} = PUNTO EQUILIBRIO`;
+      classes = "bg-zinc-800 text-zinc-200 border-zinc-650";
+    } else if (factorX <= 3.2) {
+      label = `X${factorX.toFixed(1)} = IDEAL`;
+      classes = "bg-green-950/80 text-green-400 border-green-500/60";
+    } else if (factorX <= 4.2) {
+      label = `X${factorX.toFixed(1)} = MUY RENTABLE`;
+      classes = "bg-blue-950/80 text-blue-400 border-blue-500/60";
+    } else if (factorX <= 5.2) {
+      label = `X${factorX.toFixed(1)} = X5`;
+      classes = "bg-indigo-950/80 text-indigo-400 border-indigo-500/60";
+    } else {
+      label = `X${factorX.toFixed(1)} = X6`;
+      classes = "bg-purple-950/80 text-purple-400 border-purple-500/60";
+    }
+
+    return (
+      <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${classes}`}>
+        {label}
+      </span>
+    );
   };
 
   // Si no hay campaña activa, forzamos a seleccionar una primero
@@ -475,9 +507,7 @@ export default function DatabasePage() {
                         {roi.toFixed(1)}%
                       </td>
                       <td className="px-2 py-1.5 border-r border-emerald-900/50 text-center">
-                        <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${getFactorXColor(factorX)}`}>
-                          X{factorX.toFixed(1)}
-                        </div>
+                        {renderFactorXBadge(factorX)}
                       </td>
 
                       {/* Logística */}
