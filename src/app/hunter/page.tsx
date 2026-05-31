@@ -21,6 +21,7 @@ interface Analysis {
   emerging_opportunity: { name: string; reason: string };
   red_alert: { name: string; reason: string };
   pivot_idea: { name: string; reason: string };
+  search_volume?: number;
 }
 
 // Función heurística rápida para calificar la competencia
@@ -217,10 +218,18 @@ export default function NicheHunterPage() {
             {/* Análisis IA */}
             {analysis && (
               <div className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/30 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-indigo-300 flex items-center mb-4">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Análisis DeepSeek: Nichos Encontrados
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-indigo-500/10 pb-4">
+                  <h2 className="text-lg font-semibold text-indigo-300 flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2 text-indigo-450 animate-pulse" />
+                    Análisis DeepSeek: Nichos Encontrados
+                  </h2>
+                  {analysis.search_volume && (
+                    <div className="bg-indigo-950/60 border border-indigo-800 text-indigo-300 text-xs px-3.5 py-2 rounded-lg font-semibold flex items-center gap-1.5 w-fit">
+                      🔍 Búsquedas para <strong className="text-white">"{keyword}"</strong>:{" "}
+                      <span className="text-white font-black text-sm">{new Intl.NumberFormat("es-MX").format(analysis.search_volume)}</span> búsquedas/mes
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-[#0F1111] p-4 rounded-lg border border-zinc-800">
                     <div className="text-sm text-zinc-400 mb-1">Subnicho Ganador</div>

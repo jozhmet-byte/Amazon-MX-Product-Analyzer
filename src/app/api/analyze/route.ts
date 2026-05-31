@@ -18,10 +18,18 @@ export async function POST(request: Request) {
 
     if (cachedSearch) {
       console.log(`Retornando caché para: ${keyword}`);
+      // Asegurar que exista search_volume en el análisis retornado
+      const updatedAnalysis = { ...cachedSearch.analysis };
+      if (updatedAnalysis && typeof updatedAnalysis.search_volume === "undefined") {
+        // Generar una estimación rápida si no existía (basada en reviews acumuladas de los productos top)
+        const totalReviews = (cachedSearch.products || []).reduce((acc: number, p: any) => acc + (p.reviews || 0), 0);
+        updatedAnalysis.search_volume = Math.max(150, Math.min(65000, Math.round(totalReviews * 0.9)));
+      }
+
       return NextResponse.json({
         success: true,
         products: cachedSearch.products,
-        analysis: cachedSearch.analysis,
+        analysis: updatedAnalysis,
         cached: true
       });
     }
@@ -62,7 +70,8 @@ export async function POST(request: Request) {
         "winner_subnicho": { "name": "Nombre", "reason": "Por qué es buena oportunidad" },
         "emerging_opportunity": { "name": "Nombre", "reason": "Por qué está creciendo" },
         "red_alert": { "name": "Nombre", "reason": "Por qué evitarlo (muy saturado)" },
-        "pivot_idea": { "name": "Giro de 180 grados", "reason": "Ejemplo: Si buscaron peluches de balones y es malo, sugiere peluches de dinosaurios" }
+        "pivot_idea": { "name": "Giro de 180 grados", "reason": "Ejemplo: Si buscaron peluches de balones y es malo, sugiere peluches de dinosaurios" },
+        "search_volume": 4500 // número entero estimado de búsquedas mensuales para la palabra clave principal "${keyword}" en Amazon México basado en la demanda general de estos productos
       }
     `;
 
