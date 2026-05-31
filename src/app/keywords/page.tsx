@@ -10,7 +10,7 @@ interface KeywordItem {
   keyword: string;
   type: "Principal" | "Long-tail" | "Backend";
   relevance: "Alta" | "Media" | "Baja";
-  estimated_volume: "Alto" | "Medio" | "Bajo";
+  search_volume: number;
   reason: string;
 }
 
@@ -63,7 +63,8 @@ export default function KeywordHunterPage() {
       if (!res.ok) throw new Error(data.error || "Error al extraer palabras clave");
 
       setProductInfo(data.product);
-      setKeywords(data.keywords || []);
+      const sorted = (data.keywords || []).sort((a: any, b: any) => (b.search_volume || 0) - (a.search_volume || 0));
+      setKeywords(sorted);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -87,16 +88,16 @@ export default function KeywordHunterPage() {
 
   const handleExportCSV = () => {
     if (keywords.length === 0) return;
-    const headers = ["Palabra Clave", "Tipo", "Relevancia", "Volumen Estimado", "Uso Sugerido"];
+    const headers = ["Palabra Clave", "Tipo", "Relevancia", "Volumen Mensual (Est.)", "Uso Sugerido"];
     const csvRows = [headers.join(",")];
 
-    const escapeCSV = (str: string) => {
+    const escapeCSV = (str: any) => {
       const s = String(str).replace(/"/g, '""');
       return `"${s}"`;
     };
 
     keywords.forEach(k => {
-      const row = [k.keyword, k.type, k.relevance, k.estimated_volume, k.reason].map(escapeCSV);
+      const row = [k.keyword, k.type, k.relevance, k.search_volume, k.reason].map(escapeCSV);
       csvRows.push(row.join(","));
     });
 
@@ -142,16 +143,26 @@ export default function KeywordHunterPage() {
     }
   };
 
-  const getVolumeBadge = (vol: string) => {
-    switch (vol) {
-      case "Alto":
-        return <span className="bg-red-950/40 text-red-400 border border-red-900/60 text-[9px] px-1.5 py-0.5 rounded font-medium">Alto</span>;
-      case "Medio":
-        return <span className="bg-yellow-950/40 text-yellow-400 border border-yellow-900/60 text-[9px] px-1.5 py-0.5 rounded font-medium">Medio</span>;
-      case "Bajo":
-        return <span className="bg-zinc-800/40 text-zinc-400 border border-zinc-700/60 text-[9px] px-1.5 py-0.5 rounded font-medium">Bajo</span>;
-      default:
-        return <span>{vol}</span>;
+  const getVolumeBadge = (vol: number) => {
+    const formatted = new Intl.NumberFormat("es-MX").format(vol);
+    if (vol >= 8000) {
+      return (
+        <span className="bg-red-950/40 text-red-400 border border-red-900/60 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 w-fit">
+          🔥 {formatted}
+        </span>
+      );
+    } else if (vol >= 1500) {
+      return (
+        <span className="bg-yellow-950/40 text-yellow-400 border border-yellow-900/60 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 w-fit">
+          ⚡ {formatted}
+        </span>
+      );
+    } else {
+      return (
+        <span className="bg-zinc-850 text-zinc-400 border border-zinc-750 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 w-fit">
+          ❄️ {formatted}
+        </span>
+      );
     }
   };
 
@@ -316,7 +327,7 @@ export default function KeywordHunterPage() {
                         {getRelevanceBadge(k.relevance)}
                       </td>
                       <td className="px-6 py-4">
-                        {getVolumeBadge(k.estimated_volume)}
+                        {getVolumeBadge(k.search_volume)}
                       </td>
                       <td className="px-6 py-4 text-xs text-zinc-500 leading-relaxed max-w-sm whitespace-normal">
                         {k.reason}

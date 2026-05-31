@@ -68,7 +68,7 @@ export async function POST(req: Request) {
           "keyword": "Ej: peluches de felpa gigantes",
           "type": "Principal" | "Long-tail" | "Backend",
           "relevance": "Alta" | "Media" | "Baja",
-          "estimated_volume": "Alto" | "Medio" | "Bajo",
+          "search_volume": 12500, // número entero estimado de búsquedas mensuales en Amazon.com.mx basado en demanda de la categoría
           "reason": "Razón corta de por qué el comprador mexicano usaría este término"
         }
       ]
