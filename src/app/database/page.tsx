@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Database, Download, ExternalLink, Loader2, Calculator, Trash2, Lock, ArrowRight } from "lucide-react";
+import { Database, Download, ExternalLink, Loader2, Calculator, Trash2, Lock, ArrowRight, Key, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCampaign } from "@/context/CampaignContext";
 import { useRouter } from "next/navigation";
@@ -306,7 +306,7 @@ export default function DatabasePage() {
               <thead>
                 {/* Cabeceras de Grupos */}
                 <tr>
-                  <th colSpan={8} className="bg-indigo-950/80 border-b border-r border-indigo-900/50 py-1.5 text-center text-indigo-300 font-bold uppercase tracking-wider">INFORMACIÓN DEL PRODUCTO</th>
+                  <th colSpan={10} className="bg-indigo-950/80 border-b border-r border-indigo-900/50 py-1.5 text-center text-indigo-300 font-bold uppercase tracking-wider">INFORMACIÓN DEL PRODUCTO</th>
                   <th colSpan={6} className="bg-violet-950/60 border-b border-r border-violet-900/50 py-1.5 text-center text-violet-300 font-bold uppercase tracking-wider">ANÁLISIS DE MERCADO Y COMPETENCIA</th>
                   <th colSpan={5} className="bg-green-950/60 border-b border-r border-green-900/50 py-1.5 text-center text-green-300 font-bold uppercase tracking-wider">MÉTRICAS DE RENDIMIENTO Y RANKING</th>
                   <th colSpan={7} className="bg-emerald-950/80 border-b border-r border-emerald-900/50 py-1.5 text-center text-emerald-300 font-bold uppercase tracking-wider">MÉTRICAS FINANCIERAS</th>
@@ -323,6 +323,8 @@ export default function DatabasePage() {
                   <th className="px-2 py-2 font-medium border-r border-zinc-800">TÉRMINOS BÚSQUEDA</th>
                   <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center">LINK</th>
                   <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center text-[#FF9900]">SIMULAR</th>
+                  <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center text-indigo-400">KEYWORDS</th>
+                  <th className="px-2 py-2 font-medium border-r border-zinc-800 text-center text-teal-400">OPTIMIZAR</th>
                   <th className="px-2 py-2 font-medium border-r border-indigo-900/50 text-center text-red-400">BORRAR</th>
                   
                   {/* Mercado */}
@@ -399,6 +401,24 @@ export default function DatabasePage() {
                         >
                           <Calculator className="w-3.5 h-3.5" />
                         </button>
+                      </td>
+                      <td className="px-2 py-1.5 border-r border-zinc-800 text-center">
+                        <Link
+                          href={`/keywords?asin=${p.asin}`}
+                          className="p-1 rounded bg-indigo-950/40 border border-indigo-800/50 text-indigo-400 hover:bg-indigo-900/35 transition-colors inline-block"
+                          title="Extraer palabras clave (Keyword Hunter)"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                      <td className="px-2 py-1.5 border-r border-zinc-800 text-center">
+                        <Link
+                          href={`/optimizer?asin=${p.asin}`}
+                          className="p-1 rounded bg-teal-950/40 border border-teal-800/50 text-teal-400 hover:bg-teal-900/35 transition-colors inline-block"
+                          title="Optimizar listado (Listing Optimizer)"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </Link>
                       </td>
                       <td className="px-2 py-1.5 border-r border-indigo-900/50 text-center">
                         <button

@@ -13,6 +13,8 @@ import {
   Database,
   Folder,
   Lock,
+  Key,
+  Sparkles,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -94,6 +96,14 @@ export function Sidebar() {
           {!activeCampaign && <Lock className="w-3.5 h-3.5 text-zinc-650" />}
         </Link>
 
+        <Link href="/keywords" className={linkClass("/keywords", !activeCampaign)}>
+          <div className="flex items-center">
+            <Key className="w-5 h-5 mr-3 text-indigo-400 group-hover:text-white" />
+            Keyword Hunter
+          </div>
+          {!activeCampaign && <Lock className="w-3.5 h-3.5 text-zinc-650" />}
+        </Link>
+
         <Link href="/database" className={linkClass("/database", !activeCampaign)}>
           <div className="flex items-center">
             <Database className="w-5 h-5 mr-3 text-emerald-500" />
@@ -111,7 +121,7 @@ export function Sidebar() {
         
         <Link href="/optimizer" className={linkClass("/optimizer")}>
           <div className="flex items-center">
-            <LineChart className="w-5 h-5 mr-3 text-zinc-400 group-hover:text-white" />
+            <Sparkles className="w-5 h-5 mr-3 text-teal-400 group-hover:text-white" />
             Listing Optimizer
           </div>
         </Link>
