@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaquita de Peluche Premium - Descripción de Producto</title>
+  <!-- Google Fonts para tipografía tierna y profesional -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* VARIABLES DE DISEÑO - PALETA PASTEL TIERNA */
+    :root {
+      --bg-color: #FFFDF9;
+      --text-dark: #3A3530;
+      --text-muted: #7E756B;
+      --accent-pink: #FFE5EC;
+      --accent-pink-dark: #FF85A1;
+      --accent-mint: #E8F5E9;
+      --accent-mint-dark: #81C784;
+      --accent-blue: #E3F2FD;
+      --accent-blue-dark: #64B5F6;
+      --accent-cream: #FFF3E0;
+      --accent-cream-dark: #FFB74D;
+      --accent-purple: #F3E5F5;
+      --accent-purple-dark: #BA68C8;
+      
+      --card-shadow: 0 10px 30px rgba(126, 117, 107, 0.06);
+      --card-shadow-hover: 0 15px 35px rgba(126, 117, 107, 0.12);
+      --border-radius-lg: 24px;
+      --border-radius-md: 16px;
+      --font-rounded: 'Quicksand', sans-serif;
+      --font-sans: 'Outfit', sans-serif;
+    }
+
+    /* ESTILOS GENERALES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-dark);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-rounded);
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* HERO SECTION */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      align-items: center;
+      margin-bottom: 60px;
+      background: linear-gradient(135deg, #FFF5F7 0%, #FFFDF9 100%);
+      padding: 40px;
+      border-radius: var(--border-radius-lg);
+      border: 1px solid rgba(255, 229, 236, 0.5);
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .badge-primary {
+      align-self: flex-start;
+      background-color: var(--accent-pink);
+      color: #D81B60;
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: var(--font-rounded);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(255, 229, 236, 0.4);
+    }
+
+    .hero-title {
+      font-size: 2.8rem;
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .hero-title span {
+      color: #FF7096;
+    }
+
+    .hero-description {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-family: var(--font-rounded);
+      line-height: 1.7;
+    }
+
+    .hero-bullets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .hero-bullet-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      background: white;
+      padding: 8px 16px;
+      border-radius: 50px;
+      border: 1px solid rgba(126, 117, 107, 0.08);
+      font-weight: 600;
+      color: var(--text-dark);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.01);
+    }
+
+    .hero-bullet-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .hero-image-container {
+      position: relative;
+      border-radius: var(--border-radius-lg);
+      overflow: hidden;
+      background-color: white;
+      box-shadow: var(--card-shadow);
+      border: 6px solid white;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-image-container:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .hero-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    /* GALERÍA DE IMÁGENES */
+    .gallery-section {
+      margin-bottom: 60px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .section-header h2 {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .section-header h2::after {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 4px;
+      background-color: var(--accent-pink-dark);
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
+
+    .section-header p {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-family: var(--font-rounded);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .gallery-item {
+      border-radius: var(--border-radius-md);
+      overflow: hidden;
+      background-color: white;
+      border: 4px solid white;
+      box-shadow: var(--card-shadow);
+      aspect-ratio: 1;
+      transition: all 0.3s ease;
+      cursor: zoom-in;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.04);
+      box-shadow: var(--card-shadow-hover);
+      border-color: var(--accent-pink);
+    }
+
+    .gallery-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* CARACTERÍSTICAS PRINCIPALES */
+    .features-section {
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 30px;
+      border-radius: var(--border-radius-lg);
+      background-color: white;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(126, 117, 107, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .feature-icon-wrapper {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+
+    .feature-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .feature-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* CARD COLORS PASTEL */
+    .card-pink { border-top: 5px solid var(--accent-pink-dark); }
+    .card-pink .feature-icon-wrapper { background-color: var(--accent-pink); color: var(--accent-pink-dark); }
+    
+    .card-mint { border-top: 5px solid var(--accent-mint-dark); }
+    .card-mint .feature-icon-wrapper { background-color: var(--accent-mint); color: var(--accent-mint-dark); }
+    
+    .card-blue { border-top: 5px solid var(--accent-blue-dark); }
+    .card-blue .feature-icon-wrapper { background-color: var(--accent-blue); color: var(--accent-blue-dark); }
+    
+    .card-cream { border-top: 5px solid var(--accent-cream-dark); }
+    .card-cream .feature-icon-wrapper { background-color: var(--accent-cream); color: var(--accent-cream-dark); }
+
+    .card-purple { border-top: 5px solid var(--accent-purple-dark); }
+    .card-purple .feature-icon-wrapper { background-color: var(--accent-purple); color: var(--accent-purple-dark); }
+
+    /* ESPECIFICACIONES TÉCNICAS Y CUIDADO */
+    .specs-section {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 40px;
+      margin-bottom: 60px;
+      align-items: stretch;
+    }
+
+    .specs-card, .care-card {
+      background-color: white;
+      border-radius: var(--border-radius-lg);
+      padding: 40px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(126, 117, 107, 0.05);
+    }
+
+    .care-card {
+      background: linear-gradient(135deg, #FFFDF9 0%, #FFF8E1 100%);
+      border: 1px solid rgba(255, 243, 224, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .specs-title, .care-title {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .specs-table tr {
+      border-bottom: 1px solid rgba(126, 117, 107, 0.08);
+    }
+
+    .specs-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .specs-table td {
+      padding: 16px 8px;
+      font-size: 0.95rem;
+    }
+
+    .specs-label {
+      font-weight: 600;
+      color: var(--text-dark);
+      width: 40%;
+    }
+
+    .specs-value {
+      color: var(--text-muted);
+    }
+
+    .care-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .care-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .care-item svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent-cream-dark);
+      shrink-0;
+      margin-top: 2px;
+    }
+
+    .trust-footer-banner {
+      background-color: var(--accent-pink);
+      padding: 15px;
+      border-radius: var(--border-radius-md);
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #D81B60;
+      font-family: var(--font-rounded);
+      letter-spacing: 0.3px;
+    }
+
+    /* SECCIÓN REGALO / LLAMADO A LA ACCIÓN */
+    .cta-banner {
+      background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%);
+      border-radius: var(--border-radius-lg);
+      padding: 50px;
+      text-align: center;
+      border: 1px solid rgba(227, 242, 253, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .cta-title {
+      font-size: 2.2rem;
+      max-width: 700px;
+    }
+
+    .cta-description {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      font-family: var(--font-rounded);
+    }
+
+    .cta-badges {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .cta-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .cta-badge-icon {
+      width: 44px;
+      height: 44px;
+      background-color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      color: #64B5F6;
+    }
+
+    /* RESPONSIVO */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding: 30px;
+      }
+      
+      .hero-title {
+        font-size: 2.2rem;
+      }
+
+      .specs-section {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      
+      .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      .section-header h2 {
+        font-size: 1.8rem;
+      }
+
+      .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-badges {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HERO PRINCIPAL -->
+    <section class="hero">
+      <div class="hero-content">
+        <span class="badge-primary">Suavidad Hipoalergénica</span>
+        <h1 class="hero-title">Vaquita de Peluche <span>Abrazable</span></h1>
+        <p class="hero-description">
+          Lleva a casa un compañero inseparable. Nuestra Vaquita de Peluche no es solo un juguete; es una amiga tierna y extremadamente suave diseñada para brindar confort, seguridad y dulces momentos a los más pequeños del hogar.
+        </p>
+        
+        <div class="hero-bullets">
+          <div class="hero-bullet-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#FF7096" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Textura de Felpa Nube
+          </div>
+          <div class="hero-bullet-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#FF7096" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Relleno Hipoalergénico
+          </div>
+          <div class="hero-bullet-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#FF7096" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Costuras Reforzadas
+          </div>
+        </div>
+      </div>
+      
+      <div class="hero-image-container">
+        <!-- Imagen principal de la vaquita en la carpeta images -->
+        <img src="images/Gemini_Generated_Image_5vyn1h5vyn1h5vyn.jpeg" alt="Vaquita de Peluche Principal" class="hero-image">
+      </div>
+    </section>
+
+    <!-- GALERÍA MULTI-ÁNGULO -->
+    <section class="gallery-section">
+      <div class="section-header">
+        <h2>Detalles que Enamoran</h2>
+        <p>Una mirada cercana a las tiernas manchitas, suavidad y finos acabados de nuestro peluche premium.</p>
+      </div>
+      
+      <div class="gallery-grid">
+        <div class="gallery-item">
+          <img src="images/Gemini_Generated_Image_njlxx5njlxx5njlx.jpeg" alt="Vaquita vista frontal" class="gallery-img">
+        </div>
+        <div class="gallery-item">
+          <img src="images/Gemini_Generated_Image_ny0p94ny0p94ny0p.jpeg" alt="Textura de la vaquita" class="gallery-img">
+        </div>
+        <div class="gallery-item">
+          <img src="images/Gemini_Generated_Image_k786zuk786zuk786.jpeg" alt="Vaquita de peluche detalle" class="gallery-img">
+        </div>
+        <div class="gallery-item">
+          <img src="images/Gemini_Generated_Image_i3449si3449si344.jpeg" alt="Vaquita tamaño real" class="gallery-img">
+        </div>
+      </div>
+    </section>
+
+    <!-- CARACTERÍSTICAS TIERNAS Y ENFOCADAS EN CONVERSIÓN -->
+    <section class="features-section">
+      <div class="section-header">
+        <h2>Diseñado con Amor para Durar</h2>
+        <p>Cada aspecto del peluche ha sido pensado para brindar tranquilidad a los padres y diversión infinita a los niños.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- 1. Tamaño Ideal -->
+        <div class="feature-card card-pink">
+          <div class="feature-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+          </div>
+          <h3 class="feature-title">Abrazos a la Medida (40 cm)</h3>
+          <p class="feature-desc">Con 40 cm de largo, posee el tamaño perfecto. Es lo suficientemente grande para usarse como un suave cojín de descanso y lo suficientemente ligero para que los brazos pequeñitos puedan cargarlo a todas partes.</p>
+        </div>
+
+        <!-- 2. Calidad y Suavidad -->
+        <div class="feature-card card-mint">
+          <div class="feature-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"></path><path d="M19 10a7 7 0 0 1-14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+          </div>
+          <h3 class="feature-title">Suavidad Premium Hipoalergénica</h3>
+          <p class="feature-desc">Fabricado con felpa sintética de alta densidad y relleno de algodón ultra-esponjoso. Es 100% seguro para pieles delicadas, libre de irritaciones y alérgenos para que duerman con total tranquilidad.</p>
+        </div>
+
+        <!-- 3. Diseño Tierno -->
+        <div class="feature-card card-blue">
+          <div class="feature-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </div>
+          <h3 class="feature-title">Diseño Dulce e Estimulante</h3>
+          <p class="feature-desc">Sus colores pastel contrastantes, orejas caídas y expresión amigable estimulan el desarrollo visual y el juego imaginativo, ayudando a los niños a desarrollar empatía y seguridad emocional.</p>
+        </div>
+
+        <!-- 4. El Regalo Perfecto -->
+        <div class="feature-card card-cream">
+          <div class="feature-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+          </div>
+          <h3 class="feature-title">El Regalo Inolvidable</h3>
+          <p class="feature-desc">Ya sea para un Baby Shower, cumpleaños de un sobrino, primer regalo de tu hijo o un detalle especial, este peluche de vaquita transmite amor instantáneo y es una pieza hermosa que decora cualquier habitación.</p>
+        </div>
+
+        <!-- 5. Seguridad de Nivel Superior -->
+        <div class="feature-card card-purple">
+          <div class="feature-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <h3 class="feature-title">Costuras Fuertes y Seguras</h3>
+          <p class="feature-desc">Sabemos que los niños juegan con fuerza. Por ello, las costuras son reforzadas y no contiene piezas pequeñas desprendibles (como botones o cuentas sueltas), minimizando cualquier riesgo durante el juego.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESPECIFICACIONES Y CUIDADOS -->
+    <section class="specs-section">
+      
+      <!-- Ficha Técnica -->
+      <div class="specs-card">
+        <h3 class="specs-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Especificaciones Técnicas
+        </h3>
+        <table class="specs-table">
+          <tr>
+            <td class="specs-label">Dimensiones</td>
+            <td class="specs-value">40 cm de largo x 38 cm de ancho (brazos abiertos)</td>
+          </tr>
+          <tr>
+            <td class="specs-label">Material Exterior</td>
+            <td class="specs-value">Felpa sintética premium extra suave y lisa</td>
+          </tr>
+          <tr>
+            <td class="specs-label">Relleno</td>
+            <td class="specs-value">Algodón PP 100% Virgen Hipoalergénico</td>
+          </tr>
+          <tr>
+            <td class="specs-label">Certificación</td>
+            <td class="specs-value">Materiales no tóxicos y seguros para contacto con la piel</td>
+          </tr>
+          <tr>
+            <td class="specs-label">Color</td>
+            <td class="specs-value">Blanco y Negro con acentos pastel</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Consejos de Cuidado -->
+      <div class="care-card">
+        <div>
+          <h3 class="care-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            ¿Cómo cuidarme?
+          </h3>
+          <div class="care-list">
+            <div class="care-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Límpialo suavemente con un paño húmedo y jabón neutro.</span>
+            </div>
+            <div class="care-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>No recomendamos lavar a lavadora para conservar la suavidad esponjosa de sus fibras de felpa.</span>
+            </div>
+            <div class="care-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Déjalo secar a la sombra en un lugar ventilado.</span>
+            </div>
+          </div>
+        </div>
+        <div class="trust-footer-banner">
+          ❤️ Hecho con amor para traer felicidad infinita.
+        </div>
+      </div>
+    </section>
+
+    <!-- BANNER LLAMADO A LA ACCIÓN -->
+    <section class="cta-banner">
+      <h2 class="cta-title">Regala un Compañero para Toda la Vida</h2>
+      <p class="cta-description">
+        No estás comprando solo un peluche. Estás regalando risas, juegos en la alfombra, compañía en las noches oscuras y un abrazo reconfortante siempre disponible.
+      </p>
+      <div class="cta-badges">
+        <div class="cta-badge">
+          <div class="cta-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8l-4 4h8z"></path></svg>
+          </div>
+          <span>Envío Rápido y Seguro</span>
+        </div>
+        <div class="cta-badge">
+          <div class="cta-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <span>Garantía de Satisfacción</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>
