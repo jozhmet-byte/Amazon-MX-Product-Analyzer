@@ -16,6 +16,7 @@ import {
   Key,
   Sparkles,
   Waves,
+  Lightbulb,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -86,6 +87,13 @@ export function Sidebar() {
           <div className="flex items-center">
             <Folder className="w-5 h-5 mr-3 text-zinc-400 group-hover:text-white" />
             Campañas Hub
+          </div>
+        </Link>
+        
+        <Link href="/discover" className={linkClass("/discover")}>
+          <div className="flex items-center">
+            <Lightbulb className="w-5 h-5 mr-3 text-yellow-400 group-hover:text-white" />
+            Idea Generator
           </div>
         </Link>
         
