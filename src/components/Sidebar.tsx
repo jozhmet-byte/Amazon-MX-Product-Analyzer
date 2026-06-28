@@ -15,6 +15,7 @@ import {
   Lock,
   Key,
   Sparkles,
+  Waves,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -102,6 +103,13 @@ export function Sidebar() {
             Keyword Hunter
           </div>
           {!activeCampaign && <Lock className="w-3.5 h-3.5 text-zinc-650" />}
+        </Link>
+
+        <Link href="/blue-ocean" className={linkClass("/blue-ocean")}>
+          <div className="flex items-center">
+            <Waves className="w-5 h-5 mr-3 text-cyan-400 group-hover:text-white" />
+            Blue Ocean Radar
+          </div>
         </Link>
 
         <Link href="/database" className={linkClass("/database", !activeCampaign)}>
