@@ -314,7 +314,7 @@ export default function BlueOceanRadarPage() {
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center">
                             <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden mr-2">
-                              <div className="h-full bg-green-400" style={{ width: \`\${product.demand_score}%\` }}></div>
+                              <div className="h-full bg-green-400" style={{ width: `${product.demand_score}%` }}></div>
                             </div>
                             <span className="text-xs text-zinc-300 w-6">{product.demand_score}</span>
                           </div>
@@ -322,7 +322,7 @@ export default function BlueOceanRadarPage() {
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center">
                             <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden mr-2">
-                              <div className="h-full bg-red-400" style={{ width: \`\${product.competition_score}%\` }}></div>
+                              <div className="h-full bg-red-400" style={{ width: `${product.competition_score}%` }}></div>
                             </div>
                             <span className="text-xs text-zinc-300 w-6">{product.competition_score}</span>
                           </div>
@@ -330,14 +330,14 @@ export default function BlueOceanRadarPage() {
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center">
                             <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden mr-2">
-                              <div className="h-full bg-yellow-400" style={{ width: \`\${product.quality_gap}%\` }}></div>
+                              <div className="h-full bg-yellow-400" style={{ width: `${product.quality_gap}%` }}></div>
                             </div>
                             <span className="text-xs text-zinc-300 w-6">{product.quality_gap}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col items-center">
-                            <span className={\`text-lg font-black \${getScoreColor(product.ocean_score)}\`}>
+                            <span className={`text-lg font-black ${getScoreColor(product.ocean_score)}`}>
                               {product.ocean_score}
                             </span>
                             {getScoreBadge(product.ocean_score)}
